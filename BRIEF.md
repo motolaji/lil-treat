@@ -1,4 +1,4 @@
-# Loyalr — Project Brief
+# Stackpot — Project Brief
 
 > Centralised loyalty tracking PWA for small merchants and their customers.
 > Build target: working demo in 3 hours.
@@ -41,8 +41,8 @@ Small merchants (cafés, bakeries, salons) have no affordable loyalty solution. 
 ### Install
 
 ```bash
-npx create-next-app@latest loyalr --typescript --tailwind --app --no-src-dir
-cd loyalr
+npx create-next-app@latest stackpot --typescript --tailwind --app --no-src-dir
+cd stackpot
 npm install @supabase/supabase-js @zxing/browser qrcode.react
 ```
 
@@ -125,7 +125,7 @@ Dashboard → Authentication → Providers → Anonymous → Enable
 ## Project structure
 
 ```
-loyalr/
+stackpot/
 ├── app/
 │   ├── layout.tsx              # Root layout, PWA meta tags
 │   ├── page.tsx                # Consumer app (/)
@@ -339,8 +339,8 @@ getTodayStamps(merchantId: string)
 
 ```json
 {
-  "name": "Loyalr",
-  "short_name": "Loyalr",
+  "name": "Stackpot",
+  "short_name": "Stackpot",
   "description": "Loyalty stamps for local shops",
   "start_url": "/",
   "display": "standalone",
@@ -475,8 +475,8 @@ vercel env add NEXT_PUBLIC_SUPABASE_URL
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
 
-Consumer URL: `https://loyalr.vercel.app`
-Merchant URL: `https://loyalr.vercel.app/merchant`
+Consumer URL: `https://stackpot.vercel.app`
+Merchant URL: `https://stackpot.vercel.app/merchant`
 
 > HTTPS is required for `getUserMedia()` on real devices. Vercel provides this automatically.
 
@@ -496,7 +496,7 @@ When implementing this project, follow these rules:
 8. **No page routing between tabs** — use local state (`tab` variable) to switch between views. Keeps the app snappy and avoids camera teardown on navigation.
 9. **QR payload is JSON** — always `JSON.parse()` scan results inside try/catch. Invalid QRs should show a user-friendly error, not crash.
 10. **Merchant page is email-only** — use `supabase.auth.signInWithPassword()`. No anonymous auth on `/merchant`. If no session, show login form.
-11. **savedCards (barcode scan) lives in localStorage only** — no DB table needed. Key: `loyalr_saved_cards`, value: `JSON.stringify(SavedCard[])`.
+11. **savedCards (barcode scan) lives in localStorage only** — no DB table needed. Key: `stackpot_saved_cards`, value: `JSON.stringify(SavedCard[])`.
 12. **Dark theme only** — background `#0a0a0f`, accent `#6ee7b7`. Keep it consistent.
 13. **No external UI libraries** — inline styles or Tailwind only. Keeps bundle small and avoids PWA caching issues.
 14. **Test on a real device** — camera APIs behave differently in desktop browser dev tools vs a real phone. Deploy to Vercel early and test on the actual target device.
