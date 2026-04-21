@@ -141,6 +141,12 @@ export async function issueStamp(
 
 // ── Merchant helpers ───────────────────────────────────────────────────────
 
+export async function getMerchants(): Promise<Merchant[]> {
+  const { data, error } = await supabase.from('merchants').select('*').order('name');
+  if (error) return [];
+  return (data ?? []) as Merchant[];
+}
+
 export async function getMerchantBySlug(slug: string): Promise<Merchant | null> {
   const { data, error } = await supabase
     .from('merchants')
@@ -164,6 +170,86 @@ export async function getTodayStamps(merchantId: string): Promise<number> {
 
   if (error) return 0;
   return count ?? 0;
+}
+
+// ── Shopping list helpers ──────────────────────────────────────────────────
+
+export interface ShoppingListRow {
+  id: string;
+  user_id: string;
+  source_label: string;
+  items: ShoppingItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  qty: number;
+  category: string;
+  checked: boolean;
+}
+
+export async function saveShoppingList(
+  userId: string,
+  sourceLabel: string,
+  items: ShoppingItem[],
+): Promise<ShoppingListRow | null> {
+  const { data, error } = await supabase
+    .from('shopping_lists')
+    .insert({ user_id: userId, source_label: sourceLabel, items })
+    .select()
+    .single();
+  if (error) return null;
+  return data as ShoppingListRow;
+}
+
+export async function getShoppingLists(userId: string): Promise<ShoppingListRow[]> {
+  const { data, error } = await supabase
+    .from('shopping_lists')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) return [];
+  return (data ?? []) as ShoppingListRow[];
+}
+
+export async function updateListItem(
+  listId: string,
+  itemId: string,
+  checked: boolean,
+): Promise<void> {
+  const { data: list } = await supabase
+    .from('shopping_lists')
+    .select('items')
+    .eq('id', listId)
+    .single();
+  if (!list) return;
+  const updated = (list.items as ShoppingItem[]).map((item) =>
+    item.id === itemId ? { ...item, checked } : item,
+  );
+  await supabase
+    .from('shopping_lists')
+    .update({ items: updated, updated_at: new Date().toISOString() })
+    .eq('id', listId);
+}
+
+export async function addItemToList(
+  listId: string,
+  item: ShoppingItem,
+): Promise<void> {
+  const { data: list } = await supabase
+    .from('shopping_lists')
+    .select('items')
+    .eq('id', listId)
+    .single();
+  if (!list) return;
+  const updated = [...(list.items as ShoppingItem[]), item];
+  await supabase
+    .from('shopping_lists')
+    .update({ items: updated, updated_at: new Date().toISOString() })
+    .eq('id', listId);
 }
 
 export async function getTodayTransactions(merchantId: string) {

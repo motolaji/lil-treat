@@ -5,7 +5,7 @@ interface StampCardProps {
   stampsEarned: number;
   stampTarget: number;
   rewardLabel: string;
-  newStampIndex?: number; // index of the stamp to animate (optional)
+  newStampIndex?: number;
 }
 
 export default function StampCard({
@@ -17,28 +17,27 @@ export default function StampCard({
 }: StampCardProps) {
   const isComplete = stampsEarned >= stampTarget;
   const toGo = Math.max(0, stampTarget - stampsEarned);
+  const progress = Math.min(stampsEarned / stampTarget, 1);
 
   return (
     <div style={{
-      background: '#14141c',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: '#FFFFFF',
+      border: '1px solid #EBEBE8',
       borderRadius: 20,
-      padding: '20px 20px 16px',
+      padding: '20px 20px 18px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03)',
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <p style={{ color: '#f0ede8', fontWeight: 600, fontSize: 16, margin: 0 }}>{merchantName}</p>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: '4px 0 0' }}>
-            {isComplete
-              ? '🎉 Reward unlocked!'
-              : `${stampsEarned} of ${stampTarget} · ${toGo} to go`}
+          <p style={{ color: '#1C1C1A', fontWeight: 600, fontSize: 16, margin: 0, fontFamily: "'Syne', sans-serif" }}>{merchantName}</p>
+          <p style={{ color: '#AEADA7', fontSize: 13, margin: '3px 0 0' }}>
+            {isComplete ? 'Reward unlocked!' : `${stampsEarned} of ${stampTarget} · ${toGo} to go`}
           </p>
         </div>
         {isComplete && (
           <span style={{
-            background: '#f59e0b',
-            color: '#0a0a0f',
+            background: '#FEF3C7',
+            color: '#D97706',
             fontSize: 11,
             fontWeight: 700,
             padding: '4px 10px',
@@ -50,11 +49,21 @@ export default function StampCard({
         )}
       </div>
 
-      {/* Stamp grid */}
+      {/* Progress bar */}
+      <div style={{ height: 4, background: '#F0EFE9', borderRadius: 9999, marginBottom: 14, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%',
+          width: `${progress * 100}%`,
+          background: isComplete ? '#D97706' : '#13B96D',
+          borderRadius: 9999,
+          transition: 'width 0.4s ease',
+        }} />
+      </div>
+
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))',
-        gap: 8,
+        gridTemplateColumns: 'repeat(auto-fill, minmax(34px, 1fr))',
+        gap: 7,
       }}>
         {Array.from({ length: stampTarget }).map((_, i) => {
           const filled = i < stampsEarned;
@@ -65,8 +74,8 @@ export default function StampCard({
               style={{
                 aspectRatio: '1',
                 borderRadius: '50%',
-                background: filled ? '#6ee7b7' : 'rgba(255,255,255,0.06)',
-                border: filled ? 'none' : '1.5px solid rgba(255,255,255,0.1)',
+                background: filled ? (isComplete ? '#FEF3C7' : '#DCFCE7') : '#F7F7F5',
+                border: `1.5px solid ${filled ? (isComplete ? '#FCD34D' : '#13B96D') : '#EBEBE8'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -74,8 +83,8 @@ export default function StampCard({
               }}
             >
               {filled && (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M3 8l3.5 3.5L13 5" stroke="#0a0a0f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2.5 7l3 3L11.5 4" stroke={isComplete ? '#D97706' : '#13B96D'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
             </div>
@@ -83,16 +92,15 @@ export default function StampCard({
         })}
       </div>
 
-      {/* Reward label */}
       {isComplete && (
         <div style={{
-          marginTop: 12,
+          marginTop: 14,
           padding: '10px 14px',
-          background: 'rgba(245,158,11,0.12)',
+          background: '#FFFBEB',
           borderRadius: 10,
-          border: '1px solid rgba(245,158,11,0.25)',
+          border: '1px solid #FCD34D',
         }}>
-          <p style={{ color: '#f59e0b', fontSize: 13, fontWeight: 500, margin: 0 }}>{rewardLabel}</p>
+          <p style={{ color: '#D97706', fontSize: 13, fontWeight: 500, margin: 0 }}>{rewardLabel}</p>
         </div>
       )}
 

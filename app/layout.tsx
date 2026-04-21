@@ -25,15 +25,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>
       <body style={{
         margin: 0,
         minHeight: '100%',
-        background: '#0a0a0f',
-        color: '#f0ede8',
+        background: '#F7F7F5',
+        color: '#1C1C1A',
         fontFamily: "'DM Sans', system-ui, sans-serif",
         WebkitFontSmoothing: 'antialiased',
       }}>

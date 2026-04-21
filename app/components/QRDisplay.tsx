@@ -12,14 +12,16 @@ export default function QRDisplay({ value, size = 240 }: QRDisplayProps) {
     <div style={{
       display: 'inline-flex',
       padding: 20,
-      background: '#f0ede8',
+      background: '#FFFFFF',
       borderRadius: 20,
+      border: '1px solid #EBEBE8',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     }}>
       <QRCodeSVG
         value={value}
         size={size}
-        bgColor="#f0ede8"
-        fgColor="#0a0a0f"
+        bgColor="#FFFFFF"
+        fgColor="#1C1C1A"
         level="M"
       />
     </div>

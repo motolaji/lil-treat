@@ -40,6 +40,13 @@ export default function QRScanner({ onResult, onError, active }: QRScannerProps)
 
     async function startScanner() {
       if (!videoRef.current) return;
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraState('error');
+        onError?.(new Error('Camera requires HTTPS. Use a secure connection to access the camera.'));
+        return;
+      }
+
       setCameraState('requesting');
 
       try {
@@ -52,7 +59,8 @@ export default function QRScanner({ onResult, onError, active }: QRScannerProps)
             if (result) {
               onResult(result.getText());
             }
-            if (error && error.name !== 'NotFoundException' && error.name !== 'AbortError') {
+            if (error && error.name !== 'NotFoundException' && error.name !== 'AbortError'
+              && !error.message?.includes('No MultiFormat Readers')) {
               onError?.(error as Error);
             }
           },
@@ -115,8 +123,8 @@ export default function QRScanner({ onResult, onError, active }: QRScannerProps)
     return (
       <div style={overlayStyle}>
         <div style={iconStyle}>⚠️</div>
-        <p style={titleStyle}>Camera error</p>
-        <p style={bodyStyle}>Something went wrong starting the camera. Try refreshing.</p>
+        <p style={titleStyle}>Camera unavailable</p>
+        <p style={bodyStyle}>Camera access requires HTTPS. Open the app via a secure (https://) URL.</p>
       </div>
     );
   }
