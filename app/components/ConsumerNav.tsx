@@ -3,6 +3,7 @@ import { usePathname } from 'next/navigation';
 
 const tabs = [
   { path: '/',      label: 'Wallet', icon: WalletIcon },
+  { path: '/cards', label: 'Cards',  icon: CardsIcon },
   { path: '/scan',  label: 'Scan',   icon: ScanIcon },
   { path: '/myqr',  label: 'My QR',  icon: QRIcon },
   { path: '/list',  label: 'Lists',  icon: ListIcon },
@@ -48,6 +49,17 @@ function WalletIcon({ active }: { active: boolean }) {
       <path d="M2 10h18" stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
       <rect x="14" y="13" width="4" height="2.5" rx="1.25" fill="currentColor" />
       <path d="M6 3h10" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CardsIcon({ active }: { active: boolean }) {
+  const w = active ? 2 : 1.5;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect x="2" y="5" width="18" height="13" rx="2.5" stroke="currentColor" strokeWidth={w} fill={active ? 'currentColor' : 'none'} fillOpacity={0.1} />
+      <path d="M2 9h18" stroke="currentColor" strokeWidth={w} />
+      <rect x="4.5" y="12.5" width="5" height="2.5" rx="1" fill="currentColor" />
     </svg>
   );
 }

@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import MerchantNav from '../components/MerchantNav';
 import { MerchantProvider, useMerchant } from './MerchantContext';
+import { centeredPage, inputStyle } from './authStyles';
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +22,12 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
     return () => subscription.unsubscribe();
   }, []);
+
+  // Signup is for people who don't have a merchant account yet — it must not be
+  // wrapped in the auth gate below, otherwise any existing session (even an
+  // unrelated anonymous consumer one from the same browser) would pull it into
+  // MerchantShell/MerchantNav instead of rendering standalone.
+  if (pathname === '/merchant/signup') return <>{children}</>;
 
   if (loading) {
     return (
@@ -123,19 +133,14 @@ function LoginScreen() {
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#AEADA7' }}>
+          New here?{' '}
+          <Link href="/merchant/signup" style={{ color: '#13B96D', fontWeight: 600, textDecoration: 'none' }}>
+            Sign up your business
+          </Link>
+        </p>
       </div>
     </div>
   );
 }
-
-const centeredPage: React.CSSProperties = {
-  minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-  background: '#F7F7F5',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '14px 16px', borderRadius: 14, boxSizing: 'border-box',
-  background: '#FFFFFF', border: '1px solid #EBEBE8',
-  color: '#1C1C1A', fontSize: 16, outline: 'none', fontFamily: 'inherit',
-  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-};

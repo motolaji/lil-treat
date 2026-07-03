@@ -16,26 +16,18 @@ interface QRPayload {
   merchant_id?: string;
 }
 
-interface SavedCard {
-  id: string;
-  name: string;
-  barcode: string;
-}
-
 type ScanMode = 'stamps' | 'receipt';
 type ReceiptState = 'idle' | 'capturing' | 'ocr' | 'ai' | 'saving' | 'done';
 
 export default function ScanPage() {
   const router = useRouter();
   const [scanMode, setScanMode] = useState<ScanMode>('stamps');
-  const [barcodeMode, setBarcodeMode] = useState(false);
   const [user, setUser] = useState<UserRow | null>(null);
   const [cameraStarted, setCameraStarted] = useState(false);
   const [stampState, setStampState] = useState<'idle' | 'scanning' | 'success' | 'reward'>('idle');
   const [stampedCard, setStampedCard] = useState<LoyaltyCard | null>(null);
   const [newStampCount, setNewStampCount] = useState(0);
   const [scanError, setScanError] = useState<string | null>(null);
-  const [pendingBarcodeValue, setPendingBarcodeValue] = useState<string | null>(null);
   const [flashVisible, setFlashVisible] = useState(false);
   const [receiptState, setReceiptState] = useState<ReceiptState>('idle');
   const [receiptStatusMsg, setReceiptStatusMsg] = useState('');
@@ -43,7 +35,6 @@ export default function ScanPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('mode') === 'barcode') setBarcodeMode(true);
     if (params.get('mode') === 'receipt') setScanMode('receipt');
     getOrCreateUser().then((u) => { if (u) setUser(u); });
   }, []);
@@ -59,11 +50,6 @@ export default function ScanPage() {
   async function handleScanResult(text: string) {
     if (stampState !== 'idle') return;
     setScanError(null);
-
-    if (barcodeMode) {
-      setPendingBarcodeValue(text);
-      return;
-    }
 
     let payload: QRPayload;
     try {
@@ -93,7 +79,7 @@ export default function ScanPage() {
 
     const newCount = await issueStamp(card.id, card.stamps_current);
     if (newCount === null) {
-      setScanError('Failed to record stamp. Try again.');
+      setScanError('Failed to record treat. Try again.');
       setStampState('idle');
       return;
     }
@@ -119,15 +105,6 @@ export default function ScanPage() {
     router.push('/');
   }
 
-  function savePhysicalCard(name: string) {
-    if (!pendingBarcodeValue || !name.trim()) return;
-    const stored = localStorage.getItem('stackpot_saved_cards');
-    const existing: SavedCard[] = stored ? JSON.parse(stored) : [];
-    const updated = [...existing, { id: crypto.randomUUID(), name: name.trim(), barcode: pendingBarcodeValue }];
-    localStorage.setItem('stackpot_saved_cards', JSON.stringify(updated));
-    router.push('/');
-  }
-
   async function handleReceiptCapture(imageBase64: string) {
     if (!user) return;
     setReceiptState('ocr');
@@ -148,7 +125,7 @@ export default function ScanPage() {
     setTimeout(() => router.push('/list'), 800);
   }
 
-  const scanActive = cameraStarted && stampState === 'idle' && !pendingBarcodeValue;
+  const scanActive = cameraStarted && stampState === 'idle';
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F5' }}>
@@ -162,13 +139,6 @@ export default function ScanPage() {
           newCount={newStampCount}
           isReward={stampState === 'reward'}
           onDismiss={dismiss}
-        />
-      )}
-
-      {pendingBarcodeValue && (
-        <NamePrompt
-          onSave={savePhysicalCard}
-          onCancel={() => { setPendingBarcodeValue(null); router.push('/'); }}
         />
       )}
 
@@ -195,7 +165,7 @@ export default function ScanPage() {
                   transition: 'all 0.15s',
                 }}
               >
-                {mode === 'stamps' ? 'Earn stamps' : 'Scan receipt'}
+                {mode === 'stamps' ? 'Earn treats' : 'Scan receipt'}
               </button>
             ))}
           </div>
@@ -204,7 +174,7 @@ export default function ScanPage() {
         {scanMode === 'stamps' ? (
           <>
             <p style={{ color: '#AEADA7', fontSize: 14, margin: '0 0 16px' }}>
-              {barcodeMode ? 'Scan your physical loyalty card barcode' : "Point at the merchant's QR code to earn a stamp"}
+              Point at the merchant's QR code to earn a treat
             </p>
 
             {!cameraStarted ? (
@@ -228,20 +198,6 @@ export default function ScanPage() {
               <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '12px 16px', marginTop: 16 }}>
                 <p style={{ color: '#DC2626', fontSize: 14, margin: 0 }}>{scanError}</p>
               </div>
-            )}
-
-            {barcodeMode && (
-              <button
-                onClick={() => router.push('/')}
-                style={{
-                  marginTop: 12, background: '#FFFFFF', color: '#1C1C1A',
-                  border: '1px solid #EBEBE8', borderRadius: 12, padding: '14px', fontSize: 14,
-                  cursor: 'pointer', width: '100%', fontFamily: 'inherit', touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                Cancel
-              </button>
             )}
           </>
         ) : (
@@ -370,7 +326,7 @@ function SuccessOverlay({
         onClick={(e) => e.stopPropagation()}
       >
         <p style={{ fontSize: 20, fontWeight: 700, color: '#1C1C1A', margin: '0 0 4px', fontFamily: "'Syne', sans-serif", letterSpacing: '-0.02em', textAlign: 'center' }}>
-          {isReward ? 'Reward unlocked!' : 'Stamp earned!'}
+          {isReward ? 'Reward unlocked!' : 'Treat earned!'}
         </p>
         <p style={{ color: '#AEADA7', fontSize: 14, margin: '0 0 20px', textAlign: 'center' }}>
           {card.merchants?.name}
@@ -407,7 +363,7 @@ function SuccessOverlay({
         {isReward ? (
           <div style={{ background: '#FFFBEB', borderRadius: 12, padding: '14px 18px', marginBottom: 16, textAlign: 'center', border: '1px solid #FCD34D' }}>
             <p style={{ color: '#D97706', fontWeight: 600, margin: 0, fontSize: 15 }}>{card.merchants?.reward_label}</p>
-            <p style={{ color: '#AEADA7', fontSize: 13, margin: '4px 0 0' }}>Show to the merchant to claim</p>
+            <p style={{ color: '#AEADA7', fontSize: 13, margin: '4px 0 0' }}>Tap your card in the wallet to redeem</p>
           </div>
         ) : (
           <p style={{ color: '#AEADA7', fontSize: 13, textAlign: 'center', margin: '0 0 16px' }}>
@@ -422,7 +378,7 @@ function SuccessOverlay({
           border: 'none', cursor: 'pointer', touchAction: 'manipulation',
           WebkitTapHighlightColor: 'transparent', fontFamily: 'inherit',
         }}>
-          {isReward ? 'Claim reward' : 'Done'}
+          {isReward ? 'Got it' : 'Done'}
         </button>
       </div>
 
@@ -446,39 +402,6 @@ function SuccessOverlay({
           to   { transform: scale(1); }
         }
       `}</style>
-    </div>
-  );
-}
-
-function NamePrompt({ onSave, onCancel }: { onSave: (name: string) => void; onCancel: () => void }) {
-  const [name, setName] = useState('');
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(28,28,26,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{ background: '#FFFFFF', borderRadius: 24, padding: 24, width: '100%', maxWidth: 360, border: '1px solid #EBEBE8', boxShadow: '0 8px 40px rgba(0,0,0,0.1)' }}>
-        <p style={{ color: '#1C1C1A', fontWeight: 600, fontSize: 17, margin: '0 0 16px', fontFamily: "'Syne', sans-serif" }}>Name this card</p>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Tesco Clubcard"
-          autoFocus
-          style={{
-            width: '100%', padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
-            background: '#F7F7F5', border: '1px solid #EBEBE8',
-            color: '#1C1C1A', fontSize: 15, outline: 'none', marginBottom: 16,
-          }}
-        />
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: '12px', background: '#F7F7F5', color: '#1C1C1A', border: '1px solid #EBEBE8', borderRadius: 9999, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}>Cancel</button>
-          <button
-            onClick={() => onSave(name)}
-            disabled={!name.trim()}
-            style={{ flex: 2, padding: '12px', background: '#13B96D', color: '#FFFFFF', border: 'none', borderRadius: 9999, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: name.trim() ? 1 : 0.4, touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-          >
-            Save card
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

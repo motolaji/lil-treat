@@ -29,7 +29,7 @@ export default function MerchantTodayPage() {
         borderRadius: 20, padding: '24px', textAlign: 'center', marginBottom: 16,
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}>
-        <p style={{ color: '#AEADA7', fontSize: 12, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>Stamps issued today</p>
+        <p style={{ color: '#AEADA7', fontSize: 12, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>Treats issued today</p>
         <p style={{ color: '#13B96D', fontSize: 56, fontWeight: 700, margin: 0, lineHeight: 1, fontFamily: "'Syne', sans-serif" }}>{todayCount}</p>
       </div>
 
@@ -54,7 +54,7 @@ export default function MerchantTodayPage() {
         </div>
       ) : (
         <div style={{ textAlign: 'center', paddingTop: 40 }}>
-          <p style={{ color: '#AEADA7', fontSize: 14 }}>No stamps issued yet today</p>
+          <p style={{ color: '#AEADA7', fontSize: 14 }}>No treats issued yet today</p>
         </div>
       )}
     </div>

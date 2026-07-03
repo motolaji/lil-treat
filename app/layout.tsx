@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Stackpot',
-  description: 'Loyalty stamps for local shops',
+  description: 'Loyalty treats for local shops',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

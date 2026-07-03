@@ -35,7 +35,7 @@ export default function MerchantQRPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         <p style={{ color: '#AEADA7', fontSize: 14, margin: 0, textAlign: 'center' }}>
-          Place this on the counter — customers scan it to earn stamps
+          Place this on the counter — customers scan it to earn treats
         </p>
         {merchantQR ? (
           <QRDisplay value={merchantQR} size={Math.min(typeof window !== 'undefined' ? window.innerWidth - 80 : 280, 300)} />
@@ -51,7 +51,7 @@ export default function MerchantQRPage() {
         }}>
           <p style={{ color: '#AEADA7', fontSize: 12, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>Reward</p>
           <p style={{ color: '#1C1C1A', fontSize: 15, fontWeight: 600, margin: 0 }}>
-            {merchant?.stamp_target ?? '—'} stamps → {merchant?.reward_label ?? '…'}
+            {merchant?.stamp_target ?? '—'} treats → {merchant?.reward_label ?? '…'}
           </p>
         </div>
       </div>

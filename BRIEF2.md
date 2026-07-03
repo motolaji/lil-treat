@@ -138,7 +138,98 @@ create policy "users manage own lists" on shopping_lists
 -- Seed one merchant for demo
 insert into merchants (name, slug, stamp_target, reward_label)
 values ('Verde Coffee', 'verde-coffee', 9, 'Free coffee of any size');
+
+-- NEW: standalone merchant inventory simulator (CSV-driven, not linked to receipt OCR)
+create table inventory_items (
+  id uuid primary key default gen_random_uuid(),
+  merchant_id uuid references merchants(id) not null,
+  sku text not null,
+  name text not null,
+  stock_qty int not null default 0,
+  price numeric(10,2) not null default 0,
+  updated_at timestamptz default now(),
+  unique(merchant_id, sku)
+);
+
+create table inventory_transactions (
+  id uuid primary key default gen_random_uuid(),
+  inventory_item_id uuid references inventory_items(id),
+  merchant_id uuid references merchants(id) not null,
+  type text default 'sale',   -- 'sale' | 'restock' | 'adjustment'
+  qty_change int not null default -1,
+  created_at timestamptz default now()
+);
+
+alter table inventory_items enable row level security;
+alter table inventory_transactions enable row level security;
+
+create policy "public read inventory_items" on inventory_items for select using (true);
+create policy "merchant manage inventory_items" on inventory_items for all using (true) with check (true);
+create policy "merchant manage inventory_transactions" on inventory_transactions for all using (true) with check (true);
 ```
+
+> Note: inventory RLS is intentionally permissive (`using (true)`), matching the existing posture of `merchants`/`loyalty_cards` — there's no `merchant_users` ownership table anywhere in this schema yet, so merchant identity is enforced only at the app-routing layer (email login + `MerchantContext`), not via row-level `auth.uid()` scoping. See the "deliberately skips" table below.
+
+```sql
+-- NEW: "Treats" rebrand support — redemption, expiry, transaction history, nearby discovery
+alter table loyalty_cards add column updated_at timestamptz default now();
+alter table transactions add column amount numeric(10,2);
+alter table merchants add column lat double precision;
+alter table merchants add column lng double precision;
+```
+
+> Note: `updated_at default now()` back-fills every existing `loyalty_cards` row with the migration timestamp, since no prior "last activity" timestamp ever existed on this table — a one-time data quality caveat for the 90-day expiry countdown, not an ongoing bug. `lat`/`lng` on `merchants` are populated manually per merchant via this same SQL editor (no onboarding UI exists to set them).
+
+```sql
+-- NEW: merchant ownership model — fixes "any merchant login sees every merchant"
+create table merchant_users (
+  id uuid primary key default gen_random_uuid(),
+  merchant_id uuid references merchants(id) not null,
+  user_id uuid references auth.users(id) not null,
+  unique(merchant_id, user_id)
+);
+
+alter table merchant_users enable row level security;
+
+create policy "users view own merchant links" on merchant_users
+  for select using ((select auth.uid()) = user_id);
+
+create policy "users create own merchant links" on merchant_users
+  for insert with check ((select auth.uid()) = user_id);
+
+-- merchants previously had no write policy at all; needed for self-serve signup.
+-- Anonymous consumer sessions are ALSO assigned the `authenticated` role, so this
+-- must check the is_anonymous JWT claim explicitly, not just auth.uid() is not null.
+create policy "authenticated non-anonymous users create merchants"
+on merchants
+for insert
+to authenticated
+with check ((select auth.jwt() ->> 'is_anonymous')::boolean is false);
+```
+
+**Required one-time manual step — run before deploying the `MerchantContext.tsx` change**, otherwise the existing merchant login gets locked out (nothing currently links it to a `merchant_users` row):
+```sql
+do $$
+declare
+  v_merchant_id uuid;
+  v_user_id uuid;
+begin
+  select id into v_merchant_id from merchants where slug = 'verde-coffee';
+  select id into v_user_id from auth.users where email = 'YOUR_EXISTING_MERCHANT_LOGIN_EMAIL';
+
+  if v_merchant_id is null then raise exception 'No merchant found with slug=verde-coffee'; end if;
+  if v_user_id is null then raise exception 'No auth user found with that email'; end if;
+
+  insert into merchant_users (merchant_id, user_id)
+  values (v_merchant_id, v_user_id)
+  on conflict (merchant_id, user_id) do nothing;
+
+  raise notice 'Linked merchant % to user %', v_merchant_id, v_user_id;
+end $$;
+```
+Verify with `select * from merchant_users;` before moving on.
+
+**Also disable email confirmation** (Dashboard → Authentication → Providers → Email → toggle off "Confirm email") so merchant signup and the consumer account-upgrade flow both complete synchronously, without a "check your inbox" step.
 
 **Also enable Anonymous Auth in Supabase:**
 Dashboard → Authentication → Providers → Anonymous → Enable
@@ -644,11 +735,12 @@ HTTPS is required for `getUserMedia()` on real devices. Vercel provides this aut
 | Real Mindee OCR | POST `/api/receipt` → Mindee → return line items |
 | Real Claude list gen | Call Anthropic API server-side (API key stays secret) |
 | Offline queue | IndexedDB + sync-on-connect |
-| Merchant sign-up UI | Build 3-screen onboarding flow |
-| Redemption flow | Fixed QR → options → merchant confirm |
+| ~~Merchant sign-up UI~~ | Built — `/merchant/signup` + `merchant_users` ownership table |
+| ~~Redemption flow~~ | Built — redeem QR + merchant scan confirmation |
 | Push notifications | Add next-pwa + service worker |
 | Multiple merchants | Merchant slug routing |
 | S4 missing points recovery | Receipt → claim → merchant approval queue |
+| Inventory RLS ownership scoping | `merchant_users` table now exists — tighten `inventory_items`/`inventory_transactions` policies once backfilled for every real merchant, not just the seeded demo one |
 
 ---
 

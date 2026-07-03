@@ -2,9 +2,10 @@
 import { usePathname } from 'next/navigation';
 
 const tabs = [
-  { path: '/merchant',        label: 'QR Code',  icon: QRIcon },
-  { path: '/merchant/scan',   label: 'Scan',     icon: ScanIcon },
-  { path: '/merchant/today',  label: 'Today',    icon: ChartIcon },
+  { path: '/merchant',            label: 'QR Code',   icon: QRIcon },
+  { path: '/merchant/scan',       label: 'Scan',      icon: ScanIcon },
+  { path: '/merchant/today',      label: 'Today',     icon: ChartIcon },
+  { path: '/merchant/inventory',  label: 'Inventory', icon: InventoryIcon },
 ];
 
 export default function MerchantNav() {
@@ -73,6 +74,17 @@ function ChartIcon({ active }: { active: boolean }) {
       <rect x="3" y="12" width="4" height="8" rx="1.5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={active ? 0 : 1.5} />
       <rect x="9" y="7" width="4" height="13" rx="1.5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={active ? 0 : 1.5} />
       <rect x="15" y="3" width="4" height="17" rx="1.5" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={active ? 0 : 1.5} />
+    </svg>
+  );
+}
+
+function InventoryIcon({ active }: { active: boolean }) {
+  const w = active ? 2 : 1.5;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <path d="M2 6.5L11 2l9 4.5-9 4.5-9-4.5z" stroke="currentColor" strokeWidth={w} strokeLinejoin="round" fill={active ? 'currentColor' : 'none'} fillOpacity={0.1} />
+      <path d="M2 6.5V15l9 4.5 9-4.5V6.5" stroke="currentColor" strokeWidth={w} strokeLinejoin="round" />
+      <path d="M11 11v8.5" stroke="currentColor" strokeWidth={w} />
     </svg>
   );
 }

@@ -3,15 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StampCard from './components/StampCard';
-import QRDisplay from './components/QRDisplay';
 import ConsumerNav from './components/ConsumerNav';
-import { getOrCreateUser, getUserCards, LoyaltyCard, UserRow, supabase } from '../lib/supabase';
-
-interface SavedCard {
-  id: string;
-  name: string;
-  barcode: string;
-}
+import RedeemQRModal from './components/RedeemQRModal';
+import CandyMascot from './components/CandyMascot';
+import { getOrCreateUser, getUserCards, expireCard, LoyaltyCard, UserRow, supabase } from '../lib/supabase';
+import { getExpiryStatus } from '../lib/expiry';
 
 interface StampEvent {
   card: LoyaltyCard;
@@ -23,9 +19,9 @@ export default function WalletPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserRow | null>(null);
   const [cards, setCards] = useState<LoyaltyCard[]>([]);
-  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
-  const [showBarcode, setShowBarcode] = useState<string | null>(null);
   const [stampEvent, setStampEvent] = useState<StampEvent | null>(null);
+  const [redeemingCard, setRedeemingCard] = useState<LoyaltyCard | null>(null);
+  const [redeemedToast, setRedeemedToast] = useState(false);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userRef = useRef<UserRow | null>(null);
   const cardsRef = useRef<LoyaltyCard[]>([]);
@@ -37,15 +33,20 @@ export default function WalletPage() {
       setUser(u);
       userRef.current = u;
       const c = await getUserCards(u.id);
+
+      const expired = c.filter((card) => getExpiryStatus(card).expired);
+      if (expired.length > 0) {
+        await Promise.all(expired.map((card) => expireCard(card.id)));
+        const fresh = await getUserCards(u.id);
+        setCards(fresh);
+        cardsRef.current = fresh;
+        return;
+      }
+
       setCards(c);
       cardsRef.current = c;
     }
     init();
-
-    const stored = localStorage.getItem('stackpot_saved_cards');
-    if (stored) {
-      try { setSavedCards(JSON.parse(stored)); } catch { /* ignore */ }
-    }
   }, []);
 
   // Realtime subscription — fires when merchant issues a stamp
@@ -60,6 +61,8 @@ export default function WalletPage() {
         async (payload) => {
           const updated = payload.new as LoyaltyCard;
           const prev = cardsRef.current.find((c) => c.id === updated.id);
+          const prevCount = prev?.stamps_current ?? 0;
+          const prevTarget = prev?.merchants?.stamp_target ?? 9;
 
           // If card not in local state yet (first stamp), fetch full card with merchant join
           let merged: LoyaltyCard;
@@ -75,8 +78,15 @@ export default function WalletPage() {
             cardsRef.current = newCards;
           }
 
+          // Reward redeemed (or expired) — stamps dropped from >= target back to 0
+          if (updated.stamps_current === 0 && prevCount >= prevTarget && prevCount > 0) {
+            setRedeemingCard((rc) => (rc?.id === updated.id ? null : rc));
+            setRedeemedToast(true);
+            setTimeout(() => setRedeemedToast(false), 2500);
+            return;
+          }
+
           // Only animate if stamp count actually increased
-          const prevCount = prev?.stamps_current ?? 0;
           if (updated.stamps_current <= prevCount) return;
 
           const target = merged.merchants?.stamp_target ?? 9;
@@ -100,23 +110,12 @@ export default function WalletPage() {
     setStampEvent(null);
   }
 
-  function deleteSavedCard(id: string) {
-    const updated = savedCards.filter((c) => c.id !== id);
-    setSavedCards(updated);
-    localStorage.setItem('stackpot_saved_cards', JSON.stringify(updated));
-  }
-
-  const isEmpty = cards.length === 0 && savedCards.length === 0;
+  const isEmpty = cards.length === 0;
+  const atRiskCards = cards.filter((card) => getExpiryStatus(card).atRisk);
+  const hasReadyReward = cards.some((card) => card.stamps_current >= (card.merchants?.stamp_target ?? 9));
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F5' }}>
-      {showBarcode && (
-        <BarcodeModal
-          card={savedCards.find((c) => c.id === showBarcode)!}
-          onClose={() => setShowBarcode(null)}
-        />
-      )}
-
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#FAF9F6' }}>
       {stampEvent && (
         <StampOverlay
           card={stampEvent.card}
@@ -126,72 +125,191 @@ export default function WalletPage() {
         />
       )}
 
-      <main style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px' }}>
-        <div style={{ paddingTop: 'env(safe-area-inset-top)', marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#1C1C1A', fontFamily: "'Syne', sans-serif", letterSpacing: '-0.02em' }}>Stackpot</h1>
-          {user && (
-            <p style={{ fontSize: 12, color: '#AEADA7', margin: '2px 0 0', fontFamily: "'DM Mono', monospace" }}>
-              {user.handle}
-            </p>
+      {redeemingCard && user && (
+        <RedeemQRModal card={redeemingCard} user={user} onClose={() => setRedeemingCard(null)} />
+      )}
+
+      {redeemedToast && (
+        <div style={{
+          position: 'fixed', top: 'calc(env(safe-area-inset-top) + 16px)', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 70, background: '#1C1C1A', color: '#FFFFFF', padding: '10px 20px', borderRadius: 9999,
+          fontSize: 14, fontWeight: 500, boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+        }}>
+          Redeemed! 🎉
+        </div>
+      )}
+
+      <main style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        {/* Top bar */}
+        <div style={{
+          paddingTop: 'calc(env(safe-area-inset-top) + 14px)', padding: '0 16px', marginBottom: 6,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <button onClick={() => router.push('/account')} aria-label="Account" style={walletMarkStyle}>
+            <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+              <rect x="2" y="6" width="18" height="13" rx="3" stroke="#1C1C1A" strokeWidth="1.6" />
+              <path d="M2 10h18" stroke="#1C1C1A" strokeWidth="1.6" />
+              <rect x="14" y="13" width="4" height="2.5" rx="1.25" fill="#1C1C1A" />
+            </svg>
+          </button>
+
+          {atRiskCards.length > 0 && (
+            <div style={{
+              background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 9999,
+              padding: '7px 14px', display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              <span style={{ fontSize: 12 }}>⚠️</span>
+              <p style={{ color: '#D97706', fontWeight: 800, fontSize: 10.5, letterSpacing: '0.05em', margin: 0 }}>
+                AVOID LOSING TREATS
+              </p>
+            </div>
           )}
+
+          <button onClick={() => router.push('/nearby')} aria-label="Nearby vendors" style={walletMarkStyle}>
+            <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+              <path d="M11 20s7-6.5 7-11.5A7 7 0 004 8.5C4 13.5 11 20 11 20z" stroke="#1C1C1A" strokeWidth="1.6" strokeLinejoin="round" />
+              <circle cx="11" cy="8.5" r="2.4" stroke="#1C1C1A" strokeWidth="1.6" />
+            </svg>
+          </button>
         </div>
 
-        {isEmpty ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, paddingTop: 80, textAlign: 'center' }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>☕</div>
-            <p style={{ color: '#1C1C1A', fontSize: 17, fontWeight: 600, margin: '8px 0 0', fontFamily: "'Syne', sans-serif" }}>Your wallet is empty</p>
-            <p style={{ color: '#AEADA7', fontSize: 14, margin: 0 }}>Tap Scan to earn your first stamp</p>
+        {/* Hero — scan to claim */}
+        <div style={{ textAlign: 'center', padding: '18px 16px 26px' }}>
+          <p style={{
+            color: '#1C1C1A', fontWeight: 800, fontSize: 13, letterSpacing: '0.12em', margin: '0 0 18px',
+            fontFamily: "'Syne', sans-serif",
+          }}>
+            SCAN VENDOR QR CODE
+          </p>
+
+          <div style={{
+            position: 'relative', width: 168, height: 118, margin: '0 auto 20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={cornerStyle('tl')} />
+            <div style={cornerStyle('tr')} />
+            <div style={cornerStyle('bl')} />
+            <div style={cornerStyle('br')} />
+            <CandyMascot excited={hasReadyReward} size={104} />
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {cards.map((card) => (
-              <StampCard
-                key={card.id}
-                merchantName={card.merchants?.name ?? 'Unknown'}
-                stampsEarned={card.stamps_current}
-                stampTarget={card.merchants?.stamp_target ?? 9}
-                rewardLabel={card.merchants?.reward_label ?? 'Reward'}
-              />
-            ))}
 
-            {savedCards.map((sc) => (
-              <div key={sc.id} style={{
-                background: '#FFFFFF', border: '1px solid #EBEBE8',
-                borderRadius: 20, padding: '16px 20px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-              }}>
-                <div>
-                  <p style={{ color: '#1C1C1A', fontWeight: 500, margin: 0 }}>{sc.name}</p>
-                  <p style={{ color: '#AEADA7', fontSize: 12, margin: '2px 0 0', fontFamily: "'DM Mono', monospace" }}>
-                    {sc.barcode.length > 22 ? sc.barcode.slice(0, 22) + '…' : sc.barcode}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setShowBarcode(sc.id)} style={pillBtn('#13B96D', '#FFFFFF')}>Show</button>
-                  <button onClick={() => deleteSavedCard(sc.id)} style={pillBtn('#F7F7F5', '#AEADA7')}>✕</button>
-                </div>
-              </div>
-            ))}
+          <button
+            onClick={() => router.push('/scan')}
+            style={{
+              background: '#13B96D', color: '#FFFFFF', border: 'none', borderRadius: 9999,
+              padding: '13px 28px', fontSize: 14, fontWeight: 700, letterSpacing: '0.03em',
+              cursor: 'pointer', fontFamily: 'inherit', touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent', boxShadow: '0 6px 18px rgba(19,185,109,0.3)',
+            }}
+          >
+            + CLAIM A TREAT
+          </button>
+        </div>
 
-            <button
-              onClick={() => router.push('/scan?mode=barcode')}
-              style={{
-                background: 'transparent', border: '1.5px dashed #EBEBE8',
-                borderRadius: 20, padding: '16px 20px', color: '#AEADA7',
-                fontSize: 14, cursor: 'pointer', width: '100%', textAlign: 'center',
-                fontFamily: 'inherit', touchAction: 'manipulation',
-              }}
-            >
-              + Add loyalty card (scan barcode)
+        {/* My Treats — dark panel */}
+        <div style={{
+          background: '#1C1C1A', borderRadius: '28px 28px 0 0', padding: '22px 18px 28px',
+          minHeight: 240, boxShadow: '0 -8px 24px rgba(0,0,0,0.08)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <h1 style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 19, margin: 0, fontFamily: "'Syne', sans-serif", letterSpacing: '-0.01em' }}>
+              My Treats
+            </h1>
+            <button onClick={() => router.push('/history')} aria-label="Visit history" style={darkIconBtnStyle}>
+              <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                <line x1="4" y1="6" x2="18" y2="6" stroke="rgba(255,255,255,0.75)" strokeWidth="1.6" strokeLinecap="round" />
+                <circle cx="9" cy="6" r="2.1" fill="rgba(255,255,255,0.75)" />
+                <line x1="4" y1="11" x2="18" y2="11" stroke="rgba(255,255,255,0.75)" strokeWidth="1.6" strokeLinecap="round" />
+                <circle cx="14" cy="11" r="2.1" fill="rgba(255,255,255,0.75)" />
+                <line x1="4" y1="16" x2="18" y2="16" stroke="rgba(255,255,255,0.75)" strokeWidth="1.6" strokeLinecap="round" />
+                <circle cx="7" cy="16" r="2.1" fill="rgba(255,255,255,0.75)" />
+              </svg>
             </button>
           </div>
-        )}
+
+          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, margin: '0 0 18px' }}>
+            {hasReadyReward
+              ? 'You have a big treat ready to redeem!'
+              : isEmpty
+                ? 'Scan a vendor to start your first treat card'
+                : 'You have some big treats coming up'}
+          </p>
+
+          {isEmpty ? (
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>No treats collected yet</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {cards.map((card, i) => {
+                const expiry = getExpiryStatus(card);
+                return (
+                  <StampCard
+                    key={card.id}
+                    cardId={card.id}
+                    index={i}
+                    merchantName={card.merchants?.name ?? 'Unknown'}
+                    stampsEarned={card.stamps_current}
+                    stampTarget={card.merchants?.stamp_target ?? 9}
+                    rewardLabel={card.merchants?.reward_label ?? 'Reward'}
+                    expiryKind={expiry.kind}
+                    expiryDaysRemaining={expiry.daysRemaining}
+                    expiryAtRisk={expiry.atRisk}
+                    onRedeem={() => setRedeemingCard(card)}
+                    onViewHistory={() => router.push(`/history?merchant=${card.merchant_id}`)}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 22 }}>
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10.5, lineHeight: 1.4, margin: 0, maxWidth: 220 }}>
+              Treats for a vendor expire after 90 days of inactivity — use them before they're gone.
+            </p>
+            <button
+              aria-label="Help"
+              title="Treats expire after 90 days without a visit. Redeeming resets your progress with that vendor."
+              style={{
+                width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)',
+                fontSize: 12, fontWeight: 700, cursor: 'default', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+              }}
+            >
+              ?
+            </button>
+          </div>
+        </div>
       </main>
 
       <ConsumerNav />
     </div>
   );
+}
+
+const walletMarkStyle: React.CSSProperties = {
+  width: 36, height: 36, borderRadius: '50%', background: '#FFFFFF', border: '1px solid #EBEBE8',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+  touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', flexShrink: 0,
+};
+
+const darkIconBtnStyle: React.CSSProperties = {
+  width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
+  border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center',
+  justifyContent: 'center', cursor: 'pointer', touchAction: 'manipulation',
+  WebkitTapHighlightColor: 'transparent', flexShrink: 0,
+};
+
+function cornerStyle(pos: 'tl' | 'tr' | 'bl' | 'br'): React.CSSProperties {
+  const base: React.CSSProperties = { position: 'absolute', width: 22, height: 22 };
+  const color = '#13B96D';
+  switch (pos) {
+    case 'tl': return { ...base, top: 0, left: 0, borderTop: `3px solid ${color}`, borderLeft: `3px solid ${color}`, borderTopLeftRadius: 10 };
+    case 'tr': return { ...base, top: 0, right: 0, borderTop: `3px solid ${color}`, borderRight: `3px solid ${color}`, borderTopRightRadius: 10 };
+    case 'bl': return { ...base, bottom: 0, left: 0, borderBottom: `3px solid ${color}`, borderLeft: `3px solid ${color}`, borderBottomLeftRadius: 10 };
+    case 'br': return { ...base, bottom: 0, right: 0, borderBottom: `3px solid ${color}`, borderRight: `3px solid ${color}`, borderBottomRightRadius: 10 };
+  }
 }
 
 function StampOverlay({ card, newCount, isReward, onDismiss }: {
@@ -241,7 +359,7 @@ function StampOverlay({ card, newCount, isReward, onDismiss }: {
         onClick={(e) => e.stopPropagation()}
       >
         <p style={{ fontSize: 20, fontWeight: 700, color: '#1C1C1A', margin: '0 0 4px', fontFamily: "'Syne', sans-serif", letterSpacing: '-0.02em', textAlign: 'center' }}>
-          {isReward ? 'Reward unlocked!' : 'Stamp received!'}
+          {isReward ? 'Reward unlocked!' : 'Treat received!'}
         </p>
         <p style={{ color: '#AEADA7', fontSize: 14, margin: '0 0 20px', textAlign: 'center' }}>
           {card.merchants?.name}
@@ -277,7 +395,7 @@ function StampOverlay({ card, newCount, isReward, onDismiss }: {
         {isReward ? (
           <div style={{ background: '#FFFBEB', borderRadius: 12, padding: '14px 18px', marginBottom: 16, textAlign: 'center', border: '1px solid #FCD34D' }}>
             <p style={{ color: '#D97706', fontWeight: 600, margin: 0 }}>{card.merchants?.reward_label}</p>
-            <p style={{ color: '#AEADA7', fontSize: 13, margin: '4px 0 0' }}>Show to the merchant to claim</p>
+            <p style={{ color: '#AEADA7', fontSize: 13, margin: '4px 0 0' }}>Tap your card in the wallet to redeem</p>
           </div>
         ) : (
           <p style={{ color: '#AEADA7', fontSize: 13, textAlign: 'center', margin: '0 0 16px' }}>
@@ -292,7 +410,7 @@ function StampOverlay({ card, newCount, isReward, onDismiss }: {
           border: 'none', cursor: 'pointer', touchAction: 'manipulation',
           WebkitTapHighlightColor: 'transparent', fontFamily: 'inherit',
         }}>
-          {isReward ? 'Claim reward' : 'Done'}
+          {isReward ? 'Got it' : 'Done'}
         </button>
       </div>
 
@@ -315,27 +433,3 @@ function StampOverlay({ card, newCount, isReward, onDismiss }: {
   );
 }
 
-function BarcodeModal({ card, onClose }: { card: SavedCard; onClose: () => void }) {
-  if (!card) return null;
-  return (
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(28,28,26,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-      onClick={onClose}
-    >
-      <div style={{ background: '#FFFFFF', borderRadius: 24, padding: 28, width: '100%', maxWidth: 360, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.12)', border: '1px solid #EBEBE8' }} onClick={(e) => e.stopPropagation()}>
-        <p style={{ color: '#1C1C1A', fontWeight: 600, fontSize: 17, margin: '0 0 6px', fontFamily: "'Syne', sans-serif" }}>{card.name}</p>
-        <p style={{ color: '#AEADA7', fontSize: 12, fontFamily: "'DM Mono', monospace", margin: '0 0 20px', wordBreak: 'break-all' }}>{card.barcode}</p>
-        <QRDisplay value={card.barcode} size={200} />
-        <button onClick={onClose} style={{ ...pillBtn('#F7F7F5', '#1C1C1A'), marginTop: 20, padding: '12px 32px' }}>Close</button>
-      </div>
-    </div>
-  );
-}
-
-function pillBtn(bg: string, color: string): React.CSSProperties {
-  return {
-    background: bg, color, border: 'none', borderRadius: 9999,
-    padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
-    fontFamily: 'inherit', touchAction: 'manipulation',
-  };
-}

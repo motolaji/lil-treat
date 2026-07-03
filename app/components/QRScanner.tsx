@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
+import { BarcodeFormat, BrowserMultiFormatReader } from '@zxing/browser';
 
 interface QRScannerProps {
-  onResult: (text: string) => void;
+  onResult: (text: string, format?: string) => void;
   onError?: (error: Error) => void;
   active: boolean;
 }
@@ -57,7 +57,7 @@ export default function QRScanner({ onResult, onError, active }: QRScannerProps)
           (result, error) => {
             if (cancelled) return;
             if (result) {
-              onResult(result.getText());
+              onResult(result.getText(), BarcodeFormat[result.getBarcodeFormat()]);
             }
             if (error && error.name !== 'NotFoundException' && error.name !== 'AbortError'
               && !error.message?.includes('No MultiFormat Readers')) {

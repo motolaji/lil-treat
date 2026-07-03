@@ -1,113 +1,117 @@
 'use client';
 
 interface StampCardProps {
+  cardId: string;
   merchantName: string;
   stampsEarned: number;
   stampTarget: number;
   rewardLabel: string;
-  newStampIndex?: number;
+  index?: number;
+  expiryKind: 'redeems' | 'resets';
+  expiryDaysRemaining: number;
+  expiryAtRisk: boolean;
+  onRedeem?: (cardId: string) => void;
+  onViewHistory?: (cardId: string) => void;
+}
+
+function initial(name: string): string {
+  return name.trim().slice(0, 1).toUpperCase() || '?';
+}
+
+function hueFromName(name: string): number {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  return Math.abs(hash) % 360;
 }
 
 export default function StampCard({
+  cardId,
   merchantName,
   stampsEarned,
   stampTarget,
   rewardLabel,
-  newStampIndex,
+  index = 0,
+  expiryKind,
+  expiryDaysRemaining,
+  expiryAtRisk,
+  onRedeem,
+  onViewHistory,
 }: StampCardProps) {
   const isComplete = stampsEarned >= stampTarget;
-  const toGo = Math.max(0, stampTarget - stampsEarned);
   const progress = Math.min(stampsEarned / stampTarget, 1);
+  const hue = hueFromName(merchantName);
 
   return (
-    <div style={{
-      background: '#FFFFFF',
-      border: '1px solid #EBEBE8',
-      borderRadius: 20,
-      padding: '20px 20px 18px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-        <div>
-          <p style={{ color: '#1C1C1A', fontWeight: 600, fontSize: 16, margin: 0, fontFamily: "'Syne', sans-serif" }}>{merchantName}</p>
-          <p style={{ color: '#AEADA7', fontSize: 13, margin: '3px 0 0' }}>
-            {isComplete ? 'Reward unlocked!' : `${stampsEarned} of ${stampTarget} · ${toGo} to go`}
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        borderRadius: 18,
+        padding: '16px 18px',
+        animation: `treatCardIn 420ms ${index * 70}ms cubic-bezier(0.2,0.8,0.2,1) both`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+          background: `hsl(${hue}, 65%, 45%)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#FFFFFF', fontWeight: 700, fontSize: 15, fontFamily: "'Syne', sans-serif",
+        }}>
+          {initial(merchantName)}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 15, margin: 0, fontFamily: "'Syne', sans-serif" }}>
+            {merchantName}
+          </p>
+          <p style={{ color: isComplete ? '#FCD34D' : 'rgba(255,255,255,0.45)', fontSize: 12, margin: '2px 0 0' }}>
+            {stampsEarned}/{stampTarget} Small Treats Collected
           </p>
         </div>
-        {isComplete && (
-          <span style={{
-            background: '#FEF3C7',
-            color: '#D97706',
-            fontSize: 11,
-            fontWeight: 700,
-            padding: '4px 10px',
-            borderRadius: 9999,
-            letterSpacing: '0.05em',
-          }}>
-            REWARD
-          </span>
-        )}
       </div>
 
-      {/* Progress bar */}
-      <div style={{ height: 4, background: '#F0EFE9', borderRadius: 9999, marginBottom: 14, overflow: 'hidden' }}>
+      <div style={{ height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 9999, marginBottom: 12, overflow: 'hidden' }}>
         <div style={{
           height: '100%',
           width: `${progress * 100}%`,
-          background: isComplete ? '#D97706' : '#13B96D',
           borderRadius: 9999,
-          transition: 'width 0.4s ease',
+          background: isComplete ? 'linear-gradient(90deg,#F59E0B,#FCD34D)' : '#13B96D',
+          transition: 'width 0.5s ease',
         }} />
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(34px, 1fr))',
-        gap: 7,
-      }}>
-        {Array.from({ length: stampTarget }).map((_, i) => {
-          const filled = i < stampsEarned;
-          const isNew = newStampIndex !== undefined && i === newStampIndex;
-          return (
-            <div
-              key={i}
-              style={{
-                aspectRatio: '1',
-                borderRadius: '50%',
-                background: filled ? (isComplete ? '#FEF3C7' : '#DCFCE7') : '#F7F7F5',
-                border: `1.5px solid ${filled ? (isComplete ? '#FCD34D' : '#13B96D') : '#EBEBE8'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                animation: isNew ? 'stampDrop 300ms ease-out' : undefined,
-              }}
-            >
-              {filled && (
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M2.5 7l3 3L11.5 4" stroke={isComplete ? '#D97706' : '#13B96D'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </div>
-          );
-        })}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <p style={{
+          margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em',
+          color: expiryKind === 'redeems' ? '#FCD34D' : (expiryAtRisk ? '#F87171' : 'rgba(255,255,255,0.35)'),
+        }}>
+          {expiryKind === 'redeems'
+            ? `REDEEMS IN ${expiryDaysRemaining}D`
+            : `RESETS IN ${expiryDaysRemaining}D`}
+        </p>
+
+        <button
+          onClick={() => (isComplete ? onRedeem?.(cardId) : onViewHistory?.(cardId))}
+          title={rewardLabel}
+          style={{
+            padding: '8px 16px', borderRadius: 9999, border: 'none', fontSize: 11,
+            fontWeight: 700, letterSpacing: '0.02em', cursor: 'pointer', fontFamily: 'inherit',
+            flexShrink: 0, touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
+            background: isComplete ? '#13B96D' : 'rgba(245,158,11,0.18)',
+            color: isComplete ? '#FFFFFF' : '#FCD34D',
+          }}
+        >
+          {isComplete ? 'REDEEM BIG TREAT' : 'VIEW BIG TREATS'}
+        </button>
       </div>
 
-      {isComplete && (
-        <div style={{
-          marginTop: 14,
-          padding: '10px 14px',
-          background: '#FFFBEB',
-          borderRadius: 10,
-          border: '1px solid #FCD34D',
-        }}>
-          <p style={{ color: '#D97706', fontSize: 13, fontWeight: 500, margin: 0 }}>{rewardLabel}</p>
-        </div>
-      )}
-
       <style>{`
-        @keyframes stampDrop {
-          from { transform: scale(2); opacity: 0; }
-          to   { transform: scale(1); opacity: 1; }
+        @keyframes treatCardIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
