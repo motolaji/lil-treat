@@ -6,10 +6,12 @@ import QRScanner from '../components/QRScanner';
 import ReceiptScanner from '../components/ReceiptScanner';
 import ConsumerNav from '../components/ConsumerNav';
 import {
-  getOrCreateUser, getOrCreateCard, issueStamp, saveShoppingList,
-  LoyaltyCard, UserRow,
+  getOrCreateUser, getOrCreateCard, issueStamp, saveShoppingList, getMerchantRewards,
+  supabase, LoyaltyCard, UserRow, Reward,
 } from '../../lib/supabase';
 import { processReceipt, generateShoppingList } from '../../lib/receipt';
+import { cheapestActiveCost } from '../../lib/rewards';
+import { getDeferredInstallPrompt, clearDeferredInstallPrompt } from '../../lib/pwaInstall';
 
 interface QRPayload {
   type: 'merchant' | 'consumer';
@@ -18,6 +20,7 @@ interface QRPayload {
 
 type ScanMode = 'stamps' | 'receipt';
 type ReceiptState = 'idle' | 'capturing' | 'ocr' | 'ai' | 'saving' | 'done';
+type NudgeStep = 'none' | 'login' | 'pwa';
 
 export default function ScanPage() {
   const router = useRouter();
@@ -31,6 +34,9 @@ export default function ScanPage() {
   const [flashVisible, setFlashVisible] = useState(false);
   const [receiptState, setReceiptState] = useState<ReceiptState>('idle');
   const [receiptStatusMsg, setReceiptStatusMsg] = useState('');
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [nudgeStep, setNudgeStep] = useState<NudgeStep>('none');
+  const [pwaKind, setPwaKind] = useState<'android' | 'ios' | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -77,32 +83,96 @@ export default function ScanPage() {
       return;
     }
 
-    const newCount = await issueStamp(card.id, card.stamps_current);
-    if (newCount === null) {
+    const result = await issueStamp(card.id, card.stamps_current, payload.merchant_id, user.id);
+    if (result === null) {
       setScanError('Failed to record treat. Try again.');
       setStampState('idle');
       return;
     }
 
-    const updatedCard: LoyaltyCard = { ...card, stamps_current: newCount };
+    const merchantRewards = await getMerchantRewards(payload.merchant_id, true);
+    setRewards(merchantRewards);
+
+    const updatedCard: LoyaltyCard = { ...card, stamps_current: result.newCount };
     setStampedCard(updatedCard);
-    setNewStampCount(newCount);
+    setNewStampCount(result.newCount);
 
     setFlashVisible(true);
     setTimeout(() => setFlashVisible(false), 150);
 
     setTimeout(() => {
-      const isReward = !!(card.merchants && newCount >= card.merchants.stamp_target);
+      const target = cheapestActiveCost(merchantRewards, card.merchants?.stamp_target ?? 9);
+      const isReward = result.newCount >= target;
       setStampState(isReward ? 'reward' : 'success');
       if (!isReward) {
-        dismissTimer.current = setTimeout(() => router.push('/'), 2500);
+        dismissTimer.current = setTimeout(() => proceedAfterEarn(), 2500);
       }
     }, 150);
   }
 
+  async function proceedAfterEarn() {
+    if (!localStorage.getItem('stackpot_login_nudge_seen_at')) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.is_anonymous) {
+        setNudgeStep('login');
+        return;
+      }
+    }
+    showPwaNudgeOrHome();
+  }
+
+  function showPwaNudgeOrHome() {
+    if (localStorage.getItem('stackpot_pwa_nudge_seen_at')) {
+      router.push('/');
+      return;
+    }
+
+    const standalone = typeof window !== 'undefined'
+      && window.matchMedia('(display-mode: standalone)').matches;
+    if (standalone) {
+      router.push('/');
+      return;
+    }
+
+    const ua = navigator.userAgent;
+    const isIOSSafari = /iP(hone|od|ad)/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS/.test(ua);
+
+    if (getDeferredInstallPrompt()) {
+      setPwaKind('android');
+      setNudgeStep('pwa');
+    } else if (isIOSSafari) {
+      setPwaKind('ios');
+      setNudgeStep('pwa');
+    } else {
+      // No real install path on this device/browser — skip without burning the
+      // one-time flag, so it's still offered later on a device that can act on it.
+      router.push('/');
+    }
+  }
+
+  function dismissLoginNudge() {
+    localStorage.setItem('stackpot_login_nudge_seen_at', new Date().toISOString());
+    setNudgeStep('none');
+    showPwaNudgeOrHome();
+  }
+
+  function dismissPwaNudge() {
+    localStorage.setItem('stackpot_pwa_nudge_seen_at', new Date().toISOString());
+    setNudgeStep('none');
+    router.push('/');
+  }
+
+  async function handleInstallPwa() {
+    const prompt = getDeferredInstallPrompt();
+    if (!prompt) return;
+    await prompt.prompt();
+    clearDeferredInstallPrompt();
+    dismissPwaNudge();
+  }
+
   function dismiss() {
     if (dismissTimer.current) clearTimeout(dismissTimer.current);
-    router.push('/');
+    proceedAfterEarn();
   }
 
   async function handleReceiptCapture(imageBase64: string) {
@@ -133,13 +203,22 @@ export default function ScanPage() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(255,255,255,0.7)', zIndex: 100, pointerEvents: 'none' }} />
       )}
 
-      {(stampState === 'success' || stampState === 'reward') && stampedCard && (
+      {(stampState === 'success' || stampState === 'reward') && stampedCard && nudgeStep === 'none' && (
         <SuccessOverlay
           card={stampedCard}
           newCount={newStampCount}
           isReward={stampState === 'reward'}
+          rewards={rewards}
           onDismiss={dismiss}
         />
+      )}
+
+      {nudgeStep === 'login' && (
+        <LoginNudgeOverlay onSkip={dismissLoginNudge} onLogin={() => router.push('/account')} />
+      )}
+
+      {nudgeStep === 'pwa' && (
+        <PwaNudgeOverlay kind={pwaKind} onSkip={dismissPwaNudge} onInstall={handleInstallPwa} />
       )}
 
       <main style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px' }}>
@@ -265,15 +344,17 @@ export default function ScanPage() {
 }
 
 function SuccessOverlay({
-  card, newCount, isReward, onDismiss,
+  card, newCount, isReward, rewards, onDismiss,
 }: {
   card: LoyaltyCard;
   newCount: number;
   isReward: boolean;
+  rewards: Reward[];
   onDismiss: () => void;
 }) {
-  const target = card.merchants?.stamp_target ?? 9;
+  const target = cheapestActiveCost(rewards, card.merchants?.stamp_target ?? 9);
   const toGo = Math.max(0, target - newCount);
+  const rewardLabel = rewards.find((r) => r.active && r.cost === target)?.label ?? card.merchants?.reward_label ?? 'Reward';
 
   return (
     <div
@@ -362,7 +443,7 @@ function SuccessOverlay({
 
         {isReward ? (
           <div style={{ background: '#FFFBEB', borderRadius: 12, padding: '14px 18px', marginBottom: 16, textAlign: 'center', border: '1px solid #FCD34D' }}>
-            <p style={{ color: '#D97706', fontWeight: 600, margin: 0, fontSize: 15 }}>{card.merchants?.reward_label}</p>
+            <p style={{ color: '#D97706', fontWeight: 600, margin: 0, fontSize: 15 }}>{rewardLabel}</p>
             <p style={{ color: '#AEADA7', fontSize: 13, margin: '4px 0 0' }}>Tap your card in the wallet to redeem</p>
           </div>
         ) : (
@@ -403,5 +484,100 @@ function SuccessOverlay({
         }
       `}</style>
     </div>
+  );
+}
+
+function NudgeShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 50,
+      background: 'rgba(28,28,26,0.5)', backdropFilter: 'blur(6px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px',
+    }}>
+      <div style={{
+        background: '#FFFFFF', borderRadius: 24, padding: 24,
+        width: '100%', maxWidth: 380, boxShadow: '0 12px 48px rgba(0,0,0,0.15)',
+        animation: 'slideUp 350ms cubic-bezier(0.34,1.2,0.64,1) both',
+      }}>
+        {children}
+      </div>
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(40px); opacity: 0; }
+          to   { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function LoginNudgeOverlay({ onSkip, onLogin }: { onSkip: () => void; onLogin: () => void }) {
+  return (
+    <NudgeShell>
+      <p style={{ fontSize: 20, fontWeight: 700, color: '#1C1C1A', margin: '0 0 10px', fontFamily: "'Syne', sans-serif", letterSpacing: '-0.02em', textAlign: 'center' }}>
+        Avoid losing treats
+      </p>
+      <p style={{ color: '#AEADA7', fontSize: 14, margin: '0 0 20px', textAlign: 'center', lineHeight: 1.5 }}>
+        By default we store your collected treats directly in your browser. Your phone can clear those at any
+        time — save an email and password so your treats are never lost.
+      </p>
+      <button onClick={onLogin} style={{
+        width: '100%', padding: '14px', borderRadius: 14, background: '#13B96D', color: '#FFFFFF',
+        fontWeight: 600, fontSize: 16, border: 'none', cursor: 'pointer', touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent', fontFamily: 'inherit', marginBottom: 10,
+      }}>
+        Save my account
+      </button>
+      <button onClick={onSkip} style={{
+        width: '100%', padding: '14px', borderRadius: 14, background: 'transparent', color: '#AEADA7',
+        fontWeight: 500, fontSize: 14, border: 'none', cursor: 'pointer', touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent', fontFamily: 'inherit',
+      }}>
+        Maybe later
+      </button>
+    </NudgeShell>
+  );
+}
+
+function PwaNudgeOverlay({ kind, onSkip, onInstall }: {
+  kind: 'android' | 'ios' | null;
+  onSkip: () => void;
+  onInstall: () => void;
+}) {
+  return (
+    <NudgeShell>
+      <p style={{ fontSize: 20, fontWeight: 700, color: '#1C1C1A', margin: '0 0 10px', fontFamily: "'Syne', sans-serif", letterSpacing: '-0.02em', textAlign: 'center' }}>
+        Add Stackpot to your home screen
+      </p>
+      {kind === 'ios' ? (
+        <p style={{ color: '#AEADA7', fontSize: 14, margin: '0 0 20px', textAlign: 'center', lineHeight: 1.5 }}>
+          Tap the Share icon <span style={{ fontWeight: 700 }}>􀈂</span> in Safari, then choose
+          <span style={{ fontWeight: 700 }}> &quot;Add to Home Screen&quot;</span> so you can get back here in one tap.
+        </p>
+      ) : (
+        <p style={{ color: '#AEADA7', fontSize: 14, margin: '0 0 20px', textAlign: 'center', lineHeight: 1.5 }}>
+          Install Stackpot for quicker access to your treats — no app store needed.
+        </p>
+      )}
+      {kind === 'android' && (
+        <button onClick={onInstall} style={{
+          width: '100%', padding: '14px', borderRadius: 14, background: '#13B96D', color: '#FFFFFF',
+          fontWeight: 600, fontSize: 16, border: 'none', cursor: 'pointer', touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent', fontFamily: 'inherit', marginBottom: 10,
+        }}>
+          Add to Home Screen
+        </button>
+      )}
+      <button onClick={onSkip} style={{
+        width: '100%', padding: '14px', borderRadius: 14,
+        background: kind === 'android' ? 'transparent' : '#13B96D',
+        color: kind === 'android' ? '#AEADA7' : '#FFFFFF',
+        fontWeight: kind === 'android' ? 500 : 600, fontSize: kind === 'android' ? 14 : 16,
+        border: 'none', cursor: 'pointer', touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent', fontFamily: 'inherit',
+      }}>
+        {kind === 'android' ? 'Skip for now' : 'Done'}
+      </button>
+    </NudgeShell>
   );
 }

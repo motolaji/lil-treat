@@ -6,6 +6,7 @@ const tabs = [
   { path: '/merchant/scan',       label: 'Scan',      icon: ScanIcon },
   { path: '/merchant/today',      label: 'Today',     icon: ChartIcon },
   { path: '/merchant/inventory',  label: 'Inventory', icon: InventoryIcon },
+  { path: '/merchant/promos',     label: 'Promos',    icon: PromosIcon },
 ];
 
 export default function MerchantNav() {
@@ -85,6 +86,17 @@ function InventoryIcon({ active }: { active: boolean }) {
       <path d="M2 6.5L11 2l9 4.5-9 4.5-9-4.5z" stroke="currentColor" strokeWidth={w} strokeLinejoin="round" fill={active ? 'currentColor' : 'none'} fillOpacity={0.1} />
       <path d="M2 6.5V15l9 4.5 9-4.5V6.5" stroke="currentColor" strokeWidth={w} strokeLinejoin="round" />
       <path d="M11 11v8.5" stroke="currentColor" strokeWidth={w} />
+    </svg>
+  );
+}
+
+function PromosIcon({ active }: { active: boolean }) {
+  const w = active ? 2 : 1.5;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <path d="M3 9v4a1.5 1.5 0 001.5 1.5H6l4 4V3.5L6 7.5H4.5A1.5 1.5 0 003 9z" stroke="currentColor" strokeWidth={w} strokeLinejoin="round" fill={active ? 'currentColor' : 'none'} fillOpacity={0.1} />
+      <path d="M15 8a3 3 0 010 6" stroke="currentColor" strokeWidth={w} strokeLinecap="round" />
+      <path d="M17 5.5a6.5 6.5 0 010 11" stroke="currentColor" strokeWidth={w} strokeLinecap="round" />
     </svg>
   );
 }

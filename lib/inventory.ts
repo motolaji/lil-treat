@@ -8,6 +8,7 @@ export interface InventoryItem {
   name: string;
   stock_qty: number;
   price: number;
+  treats_value: number;
   updated_at: string;
 }
 
@@ -25,6 +26,7 @@ export interface InventoryCsvRow {
   name: string;
   stock_qty: number;
   price: number;
+  treats_value: number;
 }
 
 export async function getInventoryItems(merchantId: string): Promise<InventoryItem[]> {
@@ -48,6 +50,7 @@ export async function upsertInventoryItems(
     name: row.name,
     stock_qty: row.stock_qty,
     price: row.price,
+    treats_value: row.treats_value,
     updated_at: new Date().toISOString(),
   }));
 
@@ -65,7 +68,16 @@ export async function sellOne(
   merchantId: string,
   currentQty: number,
 ): Promise<number | null> {
-  const newQty = Math.max(0, currentQty - 1);
+  return sellQty(itemId, merchantId, currentQty, 1);
+}
+
+export async function sellQty(
+  itemId: string,
+  merchantId: string,
+  currentQty: number,
+  qty: number,
+): Promise<number | null> {
+  const newQty = Math.max(0, currentQty - qty);
 
   const { error: updateError } = await supabase
     .from('inventory_items')
@@ -76,10 +88,24 @@ export async function sellOne(
 
   const { error: txError } = await supabase
     .from('inventory_transactions')
-    .insert({ inventory_item_id: itemId, merchant_id: merchantId, type: 'sale', qty_change: -1 });
+    .insert({ inventory_item_id: itemId, merchant_id: merchantId, type: 'sale', qty_change: -qty });
 
   if (txError) return null;
   return newQty;
+}
+
+export async function updateItemTreatsValue(
+  itemId: string,
+  merchantId: string,
+  treatsValue: number,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('inventory_items')
+    .update({ treats_value: treatsValue, updated_at: new Date().toISOString() })
+    .eq('id', itemId)
+    .eq('merchant_id', merchantId);
+
+  return !error;
 }
 
 export function parseInventoryCsv(text: string): InventoryCsvRow[] {
@@ -95,6 +121,7 @@ export function parseInventoryCsv(text: string): InventoryCsvRow[] {
       name: (row.name ?? '').trim(),
       stock_qty: Number(row.stock ?? row.stock_qty ?? 0) || 0,
       price: Number(row.price ?? 0) || 0,
+      treats_value: Number(row.treats ?? row.treats_value ?? 0) || 0,
     }))
     .filter((row) => row.sku && row.name);
 }
@@ -105,5 +132,6 @@ export function inventoryToCsv(items: InventoryItem[]): string {
     name: item.name,
     stock: item.stock_qty,
     price: item.price,
+    treats: item.treats_value,
   })));
 }

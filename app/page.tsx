@@ -4,10 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StampCard from './components/StampCard';
 import ConsumerNav from './components/ConsumerNav';
-import RedeemQRModal from './components/RedeemQRModal';
 import CandyMascot from './components/CandyMascot';
-import { getOrCreateUser, getUserCards, expireCard, LoyaltyCard, UserRow, supabase } from '../lib/supabase';
+import {
+  getOrCreateUser, getUserCards, expireCard, getPromotionsForUser, getRewardsForMerchants,
+  LoyaltyCard, UserRow, Reward, supabase,
+} from '../lib/supabase';
 import { getExpiryStatus } from '../lib/expiry';
+import { cheapestActiveCost } from '../lib/rewards';
 
 interface StampEvent {
   card: LoyaltyCard;
@@ -19,12 +22,14 @@ export default function WalletPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserRow | null>(null);
   const [cards, setCards] = useState<LoyaltyCard[]>([]);
+  const [rewardsByMerchant, setRewardsByMerchant] = useState<Record<string, Reward[]>>({});
   const [stampEvent, setStampEvent] = useState<StampEvent | null>(null);
-  const [redeemingCard, setRedeemingCard] = useState<LoyaltyCard | null>(null);
   const [redeemedToast, setRedeemedToast] = useState(false);
+  const [hasUnreadPromos, setHasUnreadPromos] = useState(false);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userRef = useRef<UserRow | null>(null);
   const cardsRef = useRef<LoyaltyCard[]>([]);
+  const rewardsByMerchantRef = useRef<Record<string, Reward[]>>({});
 
   useEffect(() => {
     async function init() {
@@ -32,19 +37,24 @@ export default function WalletPage() {
       if (!u) return;
       setUser(u);
       userRef.current = u;
-      const c = await getUserCards(u.id);
+      let c = await getUserCards(u.id);
 
       const expired = c.filter((card) => getExpiryStatus(card).expired);
       if (expired.length > 0) {
         await Promise.all(expired.map((card) => expireCard(card.id)));
-        const fresh = await getUserCards(u.id);
-        setCards(fresh);
-        cardsRef.current = fresh;
-        return;
+        c = await getUserCards(u.id);
       }
 
       setCards(c);
       cardsRef.current = c;
+      applyRewardsByMerchant(await getRewardsForMerchants(c.map((card) => card.merchant_id)));
+
+      const promos = await getPromotionsForUser(u.id);
+      if (promos.length > 0) {
+        const seenAt = localStorage.getItem('stackpot_promos_seen_at');
+        const newest = new Date(promos[0].created_at).getTime();
+        setHasUnreadPromos(!seenAt || newest > new Date(seenAt).getTime());
+      }
     }
     init();
   }, []);
@@ -62,7 +72,6 @@ export default function WalletPage() {
           const updated = payload.new as LoyaltyCard;
           const prev = cardsRef.current.find((c) => c.id === updated.id);
           const prevCount = prev?.stamps_current ?? 0;
-          const prevTarget = prev?.merchants?.stamp_target ?? 9;
 
           // If card not in local state yet (first stamp), fetch full card with merchant join
           let merged: LoyaltyCard;
@@ -71,6 +80,7 @@ export default function WalletPage() {
             setCards(fresh);
             cardsRef.current = fresh;
             merged = fresh.find((c) => c.id === updated.id) ?? updated;
+            applyRewardsByMerchant(await getRewardsForMerchants(fresh.map((c) => c.merchant_id)));
           } else {
             merged = { ...updated, merchants: prev.merchants };
             const newCards = cardsRef.current.map((c) => c.id === merged.id ? merged : c);
@@ -78,9 +88,10 @@ export default function WalletPage() {
             cardsRef.current = newCards;
           }
 
-          // Reward redeemed (or expired) — stamps dropped from >= target back to 0
-          if (updated.stamps_current === 0 && prevCount >= prevTarget && prevCount > 0) {
-            setRedeemingCard((rc) => (rc?.id === updated.id ? null : rc));
+          // Balance decreased — either a tier was redeemed (deducted by that tier's
+          // cost) or the card expired (reset fully to 0). Either way, no "new treat"
+          // animation applies, just the redeemed toast.
+          if (updated.stamps_current < prevCount) {
             setRedeemedToast(true);
             setTimeout(() => setRedeemedToast(false), 2500);
             return;
@@ -89,7 +100,8 @@ export default function WalletPage() {
           // Only animate if stamp count actually increased
           if (updated.stamps_current <= prevCount) return;
 
-          const target = merged.merchants?.stamp_target ?? 9;
+          const rewards = rewardsByMerchantRef.current[merged.merchant_id] ?? [];
+          const target = cheapestActiveCost(rewards, merged.merchants?.stamp_target ?? 9);
           const isReward = updated.stamps_current >= target;
 
           if (dismissTimer.current) clearTimeout(dismissTimer.current);
@@ -105,14 +117,21 @@ export default function WalletPage() {
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
 
+  function applyRewardsByMerchant(map: Record<string, Reward[]>) {
+    setRewardsByMerchant(map);
+    rewardsByMerchantRef.current = map;
+  }
+
   function dismissStampEvent() {
     if (dismissTimer.current) clearTimeout(dismissTimer.current);
     setStampEvent(null);
   }
 
   const isEmpty = cards.length === 0;
-  const atRiskCards = cards.filter((card) => getExpiryStatus(card).atRisk);
-  const hasReadyReward = cards.some((card) => card.stamps_current >= (card.merchants?.stamp_target ?? 9));
+  const atRiskCards = cards.filter((card) => getExpiryStatus(card, rewardsByMerchant[card.merchant_id] ?? []).atRisk);
+  const hasReadyReward = cards.some((card) =>
+    card.stamps_current >= cheapestActiveCost(rewardsByMerchant[card.merchant_id] ?? [], card.merchants?.stamp_target ?? 9),
+  );
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#FAF9F6' }}>
@@ -121,12 +140,9 @@ export default function WalletPage() {
           card={stampEvent.card}
           newCount={stampEvent.newCount}
           isReward={stampEvent.isReward}
+          rewards={rewardsByMerchant[stampEvent.card.merchant_id] ?? []}
           onDismiss={dismissStampEvent}
         />
-      )}
-
-      {redeemingCard && user && (
-        <RedeemQRModal card={redeemingCard} user={user} onClose={() => setRedeemingCard(null)} />
       )}
 
       {redeemedToast && (
@@ -145,13 +161,21 @@ export default function WalletPage() {
           paddingTop: 'calc(env(safe-area-inset-top) + 14px)', padding: '0 16px', marginBottom: 6,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <button onClick={() => router.push('/account')} aria-label="Account" style={walletMarkStyle}>
-            <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
-              <rect x="2" y="6" width="18" height="13" rx="3" stroke="#1C1C1A" strokeWidth="1.6" />
-              <path d="M2 10h18" stroke="#1C1C1A" strokeWidth="1.6" />
-              <rect x="14" y="13" width="4" height="2.5" rx="1.25" fill="#1C1C1A" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => router.push('/receipts')} aria-label="Receipts" style={walletMarkStyle}>
+              <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+                <path d="M5 3h12v16l-2.5-1.5L12 19l-2.5-1.5L7 19l-2-1.5V3z" stroke="#1C1C1A" strokeWidth="1.6" strokeLinejoin="round" />
+                <path d="M8 8h6M8 11.5h6M8 15h3" stroke="#1C1C1A" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+            </button>
+            <button onClick={() => router.push('/account')} aria-label="Account" style={walletMarkStyle}>
+              <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+                <rect x="2" y="6" width="18" height="13" rx="3" stroke="#1C1C1A" strokeWidth="1.6" />
+                <path d="M2 10h18" stroke="#1C1C1A" strokeWidth="1.6" />
+                <rect x="14" y="13" width="4" height="2.5" rx="1.25" fill="#1C1C1A" />
+              </svg>
+            </button>
+          </div>
 
           {atRiskCards.length > 0 && (
             <div style={{
@@ -165,12 +189,26 @@ export default function WalletPage() {
             </div>
           )}
 
-          <button onClick={() => router.push('/nearby')} aria-label="Nearby vendors" style={walletMarkStyle}>
-            <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
-              <path d="M11 20s7-6.5 7-11.5A7 7 0 004 8.5C4 13.5 11 20 11 20z" stroke="#1C1C1A" strokeWidth="1.6" strokeLinejoin="round" />
-              <circle cx="11" cy="8.5" r="2.4" stroke="#1C1C1A" strokeWidth="1.6" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => router.push('/promos')} aria-label="Promos" style={{ ...walletMarkStyle, position: 'relative' }}>
+              <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+                <path d="M5 16V9.5a6 6 0 0112 0V16l2 2H3l2-2z" stroke="#1C1C1A" strokeWidth="1.6" strokeLinejoin="round" />
+                <path d="M8.5 18.5a2.5 2.5 0 005 0" stroke="#1C1C1A" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              {hasUnreadPromos && (
+                <span style={{
+                  position: 'absolute', top: 7, right: 7, width: 8, height: 8, borderRadius: '50%',
+                  background: '#DC2626', border: '1.5px solid #FFFFFF',
+                }} />
+              )}
+            </button>
+            <button onClick={() => router.push('/nearby')} aria-label="Nearby vendors" style={walletMarkStyle}>
+              <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+                <path d="M11 20s7-6.5 7-11.5A7 7 0 004 8.5C4 13.5 11 20 11 20z" stroke="#1C1C1A" strokeWidth="1.6" strokeLinejoin="round" />
+                <circle cx="11" cy="8.5" r="2.4" stroke="#1C1C1A" strokeWidth="1.6" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Hero — scan to claim */}
@@ -242,21 +280,20 @@ export default function WalletPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {cards.map((card, i) => {
-                const expiry = getExpiryStatus(card);
+                const rewards = rewardsByMerchant[card.merchant_id] ?? [];
+                const expiry = getExpiryStatus(card, rewards);
                 return (
                   <StampCard
                     key={card.id}
-                    cardId={card.id}
+                    merchantId={card.merchant_id}
                     index={i}
                     merchantName={card.merchants?.name ?? 'Unknown'}
                     stampsEarned={card.stamps_current}
-                    stampTarget={card.merchants?.stamp_target ?? 9}
-                    rewardLabel={card.merchants?.reward_label ?? 'Reward'}
+                    rewards={rewards}
                     expiryKind={expiry.kind}
                     expiryDaysRemaining={expiry.daysRemaining}
                     expiryAtRisk={expiry.atRisk}
-                    onRedeem={() => setRedeemingCard(card)}
-                    onViewHistory={() => router.push(`/history?merchant=${card.merchant_id}`)}
+                    onOpenVendor={(merchantId) => router.push(`/nearby/${merchantId}`)}
                   />
                 );
               })}
@@ -312,14 +349,16 @@ function cornerStyle(pos: 'tl' | 'tr' | 'bl' | 'br'): React.CSSProperties {
   }
 }
 
-function StampOverlay({ card, newCount, isReward, onDismiss }: {
+function StampOverlay({ card, newCount, isReward, rewards, onDismiss }: {
   card: LoyaltyCard;
   newCount: number;
   isReward: boolean;
+  rewards: Reward[];
   onDismiss: () => void;
 }) {
-  const target = card.merchants?.stamp_target ?? 9;
+  const target = cheapestActiveCost(rewards, card.merchants?.stamp_target ?? 9);
   const toGo = Math.max(0, target - newCount);
+  const rewardLabel = rewards.find((r) => r.active && r.cost === target)?.label ?? card.merchants?.reward_label ?? 'Reward';
 
   return (
     <div
@@ -394,7 +433,7 @@ function StampOverlay({ card, newCount, isReward, onDismiss }: {
 
         {isReward ? (
           <div style={{ background: '#FFFBEB', borderRadius: 12, padding: '14px 18px', marginBottom: 16, textAlign: 'center', border: '1px solid #FCD34D' }}>
-            <p style={{ color: '#D97706', fontWeight: 600, margin: 0 }}>{card.merchants?.reward_label}</p>
+            <p style={{ color: '#D97706', fontWeight: 600, margin: 0 }}>{rewardLabel}</p>
             <p style={{ color: '#AEADA7', fontSize: 13, margin: '4px 0 0' }}>Tap your card in the wallet to redeem</p>
           </div>
         ) : (

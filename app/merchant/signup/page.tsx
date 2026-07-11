@@ -9,6 +9,8 @@ import { centeredPage, inputStyle } from '../authStyles';
 export default function MerchantSignupPage() {
   const router = useRouter();
   const [businessName, setBusinessName] = useState('');
+  const [stampTarget, setStampTarget] = useState('9');
+  const [rewardLabel, setRewardLabel] = useState('Free coffee');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,12 @@ export default function MerchantSignupPage() {
       return;
     }
 
-    const { merchant, error: merchantError } = await createMerchantAccount(businessName.trim(), data.user.id);
+    const { merchant, error: merchantError } = await createMerchantAccount(
+      businessName.trim(),
+      data.user.id,
+      Math.max(1, parseInt(stampTarget, 10) || 9),
+      rewardLabel.trim() || 'Free coffee',
+    );
     if (!merchant) {
       setError(merchantError ?? 'Could not set up your business. Try again.');
       setSubmitting(false);
@@ -56,6 +63,23 @@ export default function MerchantSignupPage() {
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
             placeholder="Business name"
+            required
+            style={inputStyle}
+          />
+          <input
+            type="number"
+            value={stampTarget}
+            onChange={(e) => setStampTarget(e.target.value)}
+            placeholder="Stamps needed for a reward"
+            min={1}
+            required
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            value={rewardLabel}
+            onChange={(e) => setRewardLabel(e.target.value)}
+            placeholder="Reward (e.g. Free coffee)"
             required
             style={inputStyle}
           />

@@ -4,17 +4,29 @@ import { useEffect, useState } from 'react';
 import QRDisplay from '../components/QRDisplay';
 import ConsumerNav from '../components/ConsumerNav';
 import { getOrCreateUser, UserRow } from '../../lib/supabase';
+import { withExpiry } from '../../lib/qrExpiry';
 
 export default function MyQRPage() {
   const [user, setUser] = useState<UserRow | null>(null);
+  const [qrValue, setQrValue] = useState('');
 
   useEffect(() => {
     getOrCreateUser().then((u) => { if (u) setUser(u); });
   }, []);
 
-  const qrValue = user
-    ? JSON.stringify({ type: 'consumer', user_handle: user.handle, user_id: user.id })
-    : '';
+  // Regenerate periodically so a live view never goes stale — only a
+  // screenshotted/exported copy expires (see lib/qrExpiry.ts).
+  useEffect(() => {
+    if (!user) return;
+
+    function refresh() {
+      setQrValue(JSON.stringify(withExpiry({ type: 'consumer', user_handle: user!.handle, user_id: user!.id })));
+    }
+
+    refresh();
+    const interval = setInterval(refresh, 60_000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F5' }}>

@@ -51,33 +51,49 @@ function MerchantShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#F7F7F5' }}>
-      {merchants.length > 1 && merchant && (
-        <div style={{
-          paddingTop: 'env(safe-area-inset-top)',
-          background: '#FFFFFF', borderBottom: '1px solid #EBEBE8',
-          padding: `env(safe-area-inset-top) 16px 0`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0' }}>
-            <span style={{ color: '#AEADA7', fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Location</span>
-            <select
-              value={merchant.id}
-              onChange={(e) => {
-                const m = merchants.find((x) => x.id === e.target.value);
-                if (m) setMerchant(m);
-              }}
-              style={{
-                flex: 1, background: '#F7F7F5', border: '1px solid #EBEBE8',
-                borderRadius: 8, padding: '6px 10px', fontSize: 14, fontWeight: 500,
-                color: '#1C1C1A', fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
-              }}
+      <div style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        background: '#FFFFFF', borderBottom: '1px solid #EBEBE8',
+        padding: `env(safe-area-inset-top) 16px 0`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0' }}>
+          {merchants.length > 1 && merchant && (
+            <>
+              <span style={{ color: '#AEADA7', fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Location</span>
+              <select
+                value={merchant.id}
+                onChange={(e) => {
+                  const m = merchants.find((x) => x.id === e.target.value);
+                  if (m) setMerchant(m);
+                }}
+                style={{
+                  flex: 1, background: '#F7F7F5', border: '1px solid #EBEBE8',
+                  borderRadius: 8, padding: '6px 10px', fontSize: 14, fontWeight: 500,
+                  color: '#1C1C1A', fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
+                }}
+              >
+                {merchants.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </>
+          )}
+          <div style={{ marginLeft: merchants.length > 1 ? 0 : 'auto', display: 'flex', gap: 14, flexShrink: 0 }}>
+            <Link
+              href="/merchant/rewards"
+              style={{ color: '#1C1C1A', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
             >
-              {merchants.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+              Rewards
+            </Link>
+            <Link
+              href="/merchant/locations/add"
+              style={{ color: '#13B96D', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
+            >
+              + Add location
+            </Link>
           </div>
         </div>
-      )}
+      </div>
       <main style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px' }}>
         {children}
       </main>

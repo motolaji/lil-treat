@@ -1,17 +1,18 @@
 'use client';
 
+import { Reward } from '../../lib/supabase';
+import { cheapestActiveCost } from '../../lib/rewards';
+
 interface StampCardProps {
-  cardId: string;
+  merchantId: string;
   merchantName: string;
   stampsEarned: number;
-  stampTarget: number;
-  rewardLabel: string;
+  rewards: Reward[];
   index?: number;
   expiryKind: 'redeems' | 'resets';
   expiryDaysRemaining: number;
   expiryAtRisk: boolean;
-  onRedeem?: (cardId: string) => void;
-  onViewHistory?: (cardId: string) => void;
+  onOpenVendor?: (merchantId: string) => void;
 }
 
 function initial(name: string): string {
@@ -28,18 +29,17 @@ function hueFromName(name: string): number {
 }
 
 export default function StampCard({
-  cardId,
+  merchantId,
   merchantName,
   stampsEarned,
-  stampTarget,
-  rewardLabel,
+  rewards,
   index = 0,
   expiryKind,
   expiryDaysRemaining,
   expiryAtRisk,
-  onRedeem,
-  onViewHistory,
+  onOpenVendor,
 }: StampCardProps) {
+  const stampTarget = cheapestActiveCost(rewards);
   const isComplete = stampsEarned >= stampTarget;
   const progress = Math.min(stampsEarned / stampTarget, 1);
   const hue = hueFromName(merchantName);
@@ -94,8 +94,7 @@ export default function StampCard({
         </p>
 
         <button
-          onClick={() => (isComplete ? onRedeem?.(cardId) : onViewHistory?.(cardId))}
-          title={rewardLabel}
+          onClick={() => onOpenVendor?.(merchantId)}
           style={{
             padding: '8px 16px', borderRadius: 9999, border: 'none', fontSize: 11,
             fontWeight: 700, letterSpacing: '0.02em', cursor: 'pointer', fontFamily: 'inherit',

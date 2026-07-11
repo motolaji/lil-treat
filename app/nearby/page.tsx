@@ -3,23 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import VendorListItem from '../components/VendorListItem';
-import { getOrCreateUser, getOrCreateCard, getMerchants, Merchant, UserRow } from '../../lib/supabase';
+import { getMerchants, Merchant } from '../../lib/supabase';
 import { getCurrentPosition, haversineDistanceKm, Coordinates } from '../../lib/geo';
 
 export default function NearbyPage() {
   const router = useRouter();
-  const [user, setUser] = useState<UserRow | null>(null);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
   const [search, setSearch] = useState('');
-  const [joiningId, setJoiningId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [u, allMerchants] = await Promise.all([getOrCreateUser(), getMerchants()]);
-      setUser(u);
+      const allMerchants = await getMerchants();
       setMerchants(allMerchants);
 
       try {
@@ -33,11 +30,8 @@ export default function NearbyPage() {
     load();
   }, []);
 
-  async function handleTap(merchant: Merchant) {
-    if (!user || joiningId) return;
-    setJoiningId(merchant.id);
-    await getOrCreateCard(user.id, merchant.id);
-    router.push('/');
+  function handleTap(merchant: Merchant) {
+    router.push(`/nearby/${merchant.id}`);
   }
 
   const filtered = merchants.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()));
@@ -53,32 +47,23 @@ export default function NearbyPage() {
     <div style={{ minHeight: '100dvh', background: '#F7F7F5', padding: '16px' }}>
       <div style={{ paddingTop: 'env(safe-area-inset-top)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => router.push('/')} style={backBtnStyle}>‹</button>
-        <h1 style={titleStyle}>Nearby vendors</h1>
+        <h1 style={titleStyle}>Treat Jar</h1>
       </div>
+      <p style={{ color: '#AEADA7', fontSize: 13, margin: '0 0 16px' }}>
+        Explore vendors you may want to shop with
+      </p>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search vendors"
-          style={{
-            flex: 1, padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
-            background: '#FFFFFF', border: '1px solid #EBEBE8',
-            color: '#1C1C1A', fontSize: 15, outline: 'none',
-          }}
-        />
-        <button
-          onClick={() => {}}
-          style={{
-            padding: '0 18px', borderRadius: 12, background: '#1C1C1A', color: '#FFFFFF',
-            border: 'none', fontSize: 13, fontWeight: 600, cursor: 'default',
-            fontFamily: 'inherit', touchAction: 'manipulation',
-          }}
-        >
-          Treat Jar
-        </button>
-      </div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search vendors"
+        style={{
+          width: '100%', padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
+          background: '#FFFFFF', border: '1px solid #EBEBE8',
+          color: '#1C1C1A', fontSize: 15, outline: 'none', marginBottom: 16,
+        }}
+      />
 
       {locationDenied && !loading && (
         <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 12, padding: '12px 16px', marginBottom: 16 }}>
@@ -99,7 +84,6 @@ export default function NearbyPage() {
               key={merchant.id}
               merchant={merchant}
               distanceKm={distanceKm}
-              disabled={joiningId !== null}
               onTap={() => handleTap(merchant)}
             />
           ))}
@@ -116,7 +100,6 @@ export default function NearbyPage() {
                   key={merchant.id}
                   merchant={merchant}
                   distanceKm={null}
-                  disabled={joiningId !== null}
                   onTap={() => handleTap(merchant)}
                 />
               ))}

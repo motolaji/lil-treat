@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useMerchant } from '../MerchantContext';
 import {
-  getInventoryItems, upsertInventoryItems, sellOne,
+  getInventoryItems, upsertInventoryItems, sellOne, updateItemTreatsValue,
   parseInventoryCsv, inventoryToCsv, InventoryItem,
 } from '../../../lib/inventory';
 
@@ -12,6 +12,8 @@ export default function MerchantInventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [editingTreatsId, setEditingTreatsId] = useState<string | null>(null);
+  const [editTreatsValue, setEditTreatsValue] = useState('');
 
   useEffect(() => {
     if (!merchant) return;
@@ -29,7 +31,7 @@ export default function MerchantInventoryPage() {
       const text = await file.text();
       const rows = parseInventoryCsv(text);
       if (rows.length === 0) {
-        setUploadError('No valid rows found. Expect columns: name, sku, stock, price.');
+        setUploadError('No valid rows found. Expect columns: name, sku, stock, price, treats.');
         return;
       }
       const updated = await upsertInventoryItems(merchant.id, rows);
@@ -49,6 +51,21 @@ export default function MerchantInventoryPage() {
     const newQty = await sellOne(item.id, merchant.id, item.stock_qty);
     if (newQty === null) return;
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, stock_qty: newQty } : i)));
+  }
+
+  function startEditTreats(item: InventoryItem) {
+    setEditingTreatsId(item.id);
+    setEditTreatsValue(String(item.treats_value));
+  }
+
+  async function saveEditTreats(item: InventoryItem) {
+    if (!merchant) return;
+    const parsed = Math.max(0, parseInt(editTreatsValue, 10) || 0);
+    const ok = await updateItemTreatsValue(item.id, merchant.id, parsed);
+    if (ok) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, treats_value: parsed } : i)));
+      setEditingTreatsId(null);
+    }
   }
 
   function handleExport() {
@@ -72,7 +89,7 @@ export default function MerchantInventoryPage() {
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}>
         <p style={{ color: '#AEADA7', fontSize: 12, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
-          CSV columns: name, sku, stock, price
+          CSV columns: name, sku, stock, price, treats
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <label style={{
@@ -125,6 +142,35 @@ export default function MerchantInventoryPage() {
                 <p style={{ color: '#AEADA7', fontSize: 12, margin: '2px 0 0', fontFamily: "'DM Mono', monospace" }}>
                   {item.sku} · £{item.price.toFixed(2)}
                 </p>
+                {editingTreatsId === item.id ? (
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                    <input
+                      type="number"
+                      value={editTreatsValue}
+                      onChange={(e) => setEditTreatsValue(e.target.value)}
+                      min={0}
+                      autoFocus
+                      style={{
+                        width: 64, padding: '5px 8px', borderRadius: 8, boxSizing: 'border-box',
+                        background: '#F7F7F5', border: '1px solid #EBEBE8',
+                        color: '#1C1C1A', fontSize: 12, outline: 'none', fontFamily: 'inherit',
+                      }}
+                    />
+                    <button
+                      onClick={() => saveEditTreats(item)}
+                      style={{ padding: '5px 10px', background: '#13B96D', color: '#FFFFFF', border: 'none', borderRadius: 9999, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => startEditTreats(item)}
+                    style={{ background: 'transparent', border: 'none', color: '#13B96D', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0, marginTop: 4 }}
+                  >
+                    {item.treats_value} treats each
+                  </button>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                 <span style={{

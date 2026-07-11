@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { getOrCreateCard, issueStamp, redeemReward, LoyaltyCard } from '../../../lib/supabase';
+import { useEffect, useState } from 'react';
+import { getOrCreateCard, issueStamp, redeemReward, getMerchantRewards, LoyaltyCard, Reward } from '../../../lib/supabase';
+import { getInventoryItems, sellQty, InventoryItem } from '../../../lib/inventory';
+import { isExpired } from '../../../lib/qrExpiry';
+import { cheapestActiveCost } from '../../../lib/rewards';
 import QRScanner from '../../components/QRScanner';
 import { useMerchant } from '../MerchantContext';
 
@@ -9,6 +12,7 @@ interface ConsumerPayload {
   type: 'consumer';
   user_handle: string;
   user_id: string;
+  exp?: number;
 }
 
 interface RedeemPayload {
@@ -16,6 +20,8 @@ interface RedeemPayload {
   loyalty_card_id: string;
   user_id: string;
   merchant_id: string;
+  reward_id: string;
+  exp?: number;
 }
 
 type ScanPayload = ConsumerPayload | RedeemPayload;
@@ -40,6 +46,25 @@ export default function MerchantScanPage() {
   const [scanConfirm, setScanConfirm] = useState<string | null>(null);
   const [redeemConfirm, setRedeemConfirm] = useState<RedeemConfirm | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [rewards, setRewards] = useState<Reward[]>([]);
+
+  useEffect(() => {
+    if (!merchant) return;
+    getMerchantRewards(merchant.id, true).then(setRewards);
+  }, [merchant?.id]);
+
+  useEffect(() => {
+    if (!pendingEarn || !merchant) return;
+    setQuantities({});
+    getInventoryItems(merchant.id).then(setItems);
+  }, [pendingEarn, merchant?.id]);
+
+  const treatsFromItems = items.reduce(
+    (sum, item) => sum + (quantities[item.id] ?? 0) * item.treats_value,
+    0,
+  );
 
   async function handleScanResult(text: string) {
     if (!merchant || processing) return;
@@ -57,9 +82,15 @@ export default function MerchantScanPage() {
       return;
     }
 
+    if (isExpired(payload)) {
+      setScanError('This QR has expired — ask the customer to reopen their screen.');
+      setScanActive(true);
+      return;
+    }
+
     if (payload.type === 'redeem') {
       setProcessing(true);
-      const result = await redeemReward(payload.loyalty_card_id, merchant.id);
+      const result = await redeemReward(payload.loyalty_card_id, merchant.id, payload.reward_id);
       setProcessing(false);
 
       if (!result) {
@@ -93,11 +124,37 @@ export default function MerchantScanPage() {
   async function confirmAmount(skip: boolean) {
     if (!pendingEarn || !merchant) return;
     setProcessing(true);
-    const amount = skip ? undefined : (parseFloat(amountInput) || undefined);
-    const newCount = await issueStamp(pendingEarn.card.id, pendingEarn.card.stamps_current, amount);
-    setProcessing(false);
 
-    if (newCount === null) {
+    const chosenItems = items
+      .map((item) => ({ item, qty: quantities[item.id] ?? 0 }))
+      .filter(({ qty }) => qty > 0);
+
+    const result = (skip || chosenItems.length === 0)
+      ? await issueStamp(
+          pendingEarn.card.id,
+          pendingEarn.card.stamps_current,
+          merchant.id,
+          pendingEarn.card.user_id,
+          { flatAmount: skip ? undefined : (parseFloat(amountInput) || undefined) },
+        )
+      : await issueStamp(
+          pendingEarn.card.id,
+          pendingEarn.card.stamps_current,
+          merchant.id,
+          pendingEarn.card.user_id,
+          {
+            lineItems: chosenItems.map(({ item, qty }) => ({
+              inventory_item_id: item.id,
+              name: item.name,
+              qty,
+              unit_price: item.price,
+              treats_value: item.treats_value,
+            })),
+          },
+        );
+
+    if (result === null) {
+      setProcessing(false);
       setScanError('Failed to issue treat. Try again.');
       setPendingEarn(null);
       setAmountInput('');
@@ -105,7 +162,15 @@ export default function MerchantScanPage() {
       return;
     }
 
-    setScanConfirm(`Treat issued to ${pendingEarn.userHandle} — now ${newCount} of ${merchant.stamp_target}`);
+    // Decrement stock for whatever was actually sold (best-effort, mirrors the
+    // manual "Sell 1" button — a failure here doesn't undo the already-issued treats).
+    await Promise.all(
+      chosenItems.map(({ item, qty }) => sellQty(item.id, merchant.id, item.stock_qty, qty)),
+    );
+    setProcessing(false);
+
+    const target = cheapestActiveCost(rewards, merchant.stamp_target);
+    setScanConfirm(`Treat issued to ${pendingEarn.userHandle} — now ${result.newCount} of ${target}`);
     setPendingEarn(null);
     setAmountInput('');
   }
@@ -156,6 +221,52 @@ export default function MerchantScanPage() {
 
       {pendingEarn && !processing && (
         <div style={{ background: '#FFFFFF', border: '1px solid #EBEBE8', borderRadius: 14, padding: '20px', marginTop: 16 }}>
+          {items.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ color: '#1C1C1A', fontWeight: 600, fontSize: 15, margin: '0 0 12px', fontFamily: "'Syne', sans-serif" }}>
+                What did they buy?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {items.map((item) => {
+                  const qty = quantities[item.id] ?? 0;
+                  return (
+                    <div key={item.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      background: '#F7F7F5', border: '1px solid #EBEBE8', borderRadius: 12, padding: '10px 14px',
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ color: '#1C1C1A', fontSize: 14, fontWeight: 600, margin: 0 }}>{item.name}</p>
+                        <p style={{ color: '#AEADA7', fontSize: 12, margin: '2px 0 0' }}>
+                          £{item.price.toFixed(2)} · {item.treats_value} treats each
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => setQuantities((q) => ({ ...q, [item.id]: Math.max(0, (q[item.id] ?? 0) - 1) }))}
+                          style={stepperBtnStyle}
+                        >
+                          −
+                        </button>
+                        <span style={{ color: '#1C1C1A', fontSize: 14, fontWeight: 600, minWidth: 16, textAlign: 'center' }}>{qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQuantities((q) => ({ ...q, [item.id]: (q[item.id] ?? 0) + 1 }))}
+                          style={stepperBtnStyle}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p style={{ color: '#13B96D', fontSize: 13, fontWeight: 600, margin: '12px 0 0' }}>
+                Treats to award: {treatsFromItems}
+              </p>
+            </div>
+          )}
+
           <p style={{ color: '#1C1C1A', fontWeight: 600, fontSize: 15, margin: '0 0 12px', fontFamily: "'Syne', sans-serif" }}>
             Purchase amount (optional)
           </p>
@@ -243,3 +354,10 @@ export default function MerchantScanPage() {
     </div>
   );
 }
+
+const stepperBtnStyle: React.CSSProperties = {
+  width: 28, height: 28, borderRadius: '50%', background: '#FFFFFF', border: '1px solid #EBEBE8',
+  color: '#1C1C1A', fontSize: 16, lineHeight: 1, cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', padding: 0,
+};

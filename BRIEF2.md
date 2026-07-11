@@ -231,6 +231,63 @@ Verify with `select * from merchant_users;` before moving on.
 
 **Also disable email confirmation** (Dashboard → Authentication → Providers → Email → toggle off "Confirm email") so merchant signup and the consumer account-upgrade flow both complete synchronously, without a "check your inbox" step.
 
+```sql
+-- NEW: in-app promo inbox (merchant broadcasts a short message to their own customers)
+create table promotions (
+  id uuid primary key default gen_random_uuid(),
+  merchant_id uuid references merchants(id) not null,
+  title text not null,
+  body text not null,
+  created_at timestamptz default now()
+);
+
+alter table promotions enable row level security;
+
+create policy "public read promotions" on promotions
+  for select using (true);
+
+create policy "merchant owners create promotions" on promotions
+for insert
+to authenticated
+with check (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+
+-- NEW: missing-points recovery (text-only claim, no photo evidence in this pass)
+create table point_claims (
+  id uuid primary key default gen_random_uuid(),
+  loyalty_card_id uuid references loyalty_cards(id) not null,
+  user_id uuid references users(id) not null,
+  merchant_id uuid references merchants(id) not null,
+  note text not null,
+  visit_date date,
+  status text not null default 'pending',
+  created_at timestamptz default now()
+);
+
+alter table point_claims enable row level security;
+
+create policy "users create own claims" on point_claims
+  for insert with check ((select auth.uid()) = user_id);
+create policy "users view own claims" on point_claims
+  for select using ((select auth.uid()) = user_id);
+create policy "merchant owners view claims" on point_claims
+  for select using (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+create policy "merchant owners update claims" on point_claims
+  for update using (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+
+-- Tighten inventory RLS now that merchant_users is populated for the seeded merchant
+drop policy "merchant manage inventory_items" on inventory_items;
+create policy "merchant manage inventory_items" on inventory_items
+  for all using (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())))
+  with check (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+
+drop policy "merchant manage inventory_transactions" on inventory_transactions;
+create policy "merchant manage inventory_transactions" on inventory_transactions
+  for all using (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())))
+  with check (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+```
+
+> Note: QR signing (HMAC) is intentionally still skipped — real signing needs a secret that can never live in client JS, which means a Supabase Edge Function (this app's first server-side code). Instead, `lib/qrExpiry.ts` adds a lightweight 5-minute expiry to the consumer's own QR and the redemption QR (not the merchant's counter QR, which is meant to stay displayed all day) — this stops stale/replayed screenshots, not forgery. See the "deliberately skips" table.
+
 **Also enable Anonymous Auth in Supabase:**
 Dashboard → Authentication → Providers → Anonymous → Enable
 
@@ -731,16 +788,99 @@ HTTPS is required for `getUserMedia()` on real devices. Vercel provides this aut
 
 | Skipped | Fix — week 1 |
 |---|---|
-| QR signing / HMAC | Edge Function: verify signed token before issuing stamp |
+| QR signing / HMAC (partial — see note above) | Edge Function: verify signed token before issuing stamp; `lib/qrExpiry.ts` covers replay/staleness only, not forgery |
 | Real Mindee OCR | POST `/api/receipt` → Mindee → return line items |
 | Real Claude list gen | Call Anthropic API server-side (API key stays secret) |
 | Offline queue | IndexedDB + sync-on-connect |
 | ~~Merchant sign-up UI~~ | Built — `/merchant/signup` + `merchant_users` ownership table |
 | ~~Redemption flow~~ | Built — redeem QR + merchant scan confirmation |
-| Push notifications | Add next-pwa + service worker |
-| Multiple merchants | Merchant slug routing |
-| S4 missing points recovery | Receipt → claim → merchant approval queue |
-| Inventory RLS ownership scoping | `merchant_users` table now exists — tighten `inventory_items`/`inventory_transactions` policies once backfilled for every real merchant, not just the seeded demo one |
+| ~~Push notifications~~ | Built as an in-app promo inbox instead — no OS-level push, no service worker |
+| ~~Multiple merchants~~ | Built — `/merchant/locations/add` lets one login own multiple businesses |
+| ~~S4 missing points recovery~~ | Built — text-only claim + merchant approval in `/merchant/today` |
+| ~~Inventory RLS ownership scoping~~ | Built — tightened now that `merchant_users` is backfilled |
+
+---
+
+## Treats redesign — multi-tier rewards, per-item earn rates, itemized receipts
+
+Rebrands stamps/rewards as "small treats"/"big treats" and moves from one flat `stamp_target`/`reward_label` per merchant to a real rewards catalog, plus wires inventory items to actual treats-earned amounts and a new itemized Receipts feature. Run these five blocks **in order** in the Supabase SQL editor.
+
+**1. Rewards catalog (multi-tier, replaces the single stamp_target/reward_label going forward — those columns stay in place, unused):**
+```sql
+create table rewards (
+  id uuid primary key default gen_random_uuid(),
+  merchant_id uuid references merchants(id) not null,
+  label text not null,
+  description text,
+  cost int not null check (cost > 0),
+  active boolean not null default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table rewards enable row level security;
+
+create policy "public read rewards" on rewards for select using (true);
+
+create policy "merchant owners create rewards" on rewards
+  for insert to authenticated
+  with check (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+
+create policy "merchant owners update rewards" on rewards
+  for update using (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())))
+  with check (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+```
+
+**2. Seed one starter reward per existing merchant (idempotent, safe to re-run):**
+```sql
+insert into rewards (merchant_id, label, cost, active)
+select id, reward_label, greatest(stamp_target, 1), true
+from merchants
+where not exists (select 1 from rewards r where r.merchant_id = merchants.id);
+```
+
+**3. Inventory items get a treats-earned value:**
+```sql
+alter table inventory_items add column treats_value int not null default 0;
+```
+
+**4. Itemized receipts (one table, `line_items` as a jsonb array — mirrors the existing `shopping_lists.items` pattern):**
+```sql
+create table receipts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) not null,
+  merchant_id uuid references merchants(id) not null,
+  loyalty_card_id uuid references loyalty_cards(id),
+  line_items jsonb not null default '[]',
+  total_amount numeric(10,2) not null default 0,
+  total_treats_earned int not null default 0,
+  created_at timestamptz default now()
+);
+
+alter table receipts enable row level security;
+
+create policy "users view own receipts" on receipts
+  for select using ((select auth.uid()) = user_id);
+create policy "merchant owners view receipts" on receipts
+  for select using (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+create policy "merchant owners create receipts" on receipts
+  for insert to authenticated
+  with check (merchant_id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+```
+`line_items` shape: `[{ inventory_item_id, name, qty, unit_price, treats_value, line_treats }]` — snapshotted at sale time so later edits to an inventory item's name/price/treats-value don't retroactively change old receipts. Only a merchant's own session ever inserts (item selection happens at scan-confirm time; consumer self-scan never itemizes).
+
+**5. Tier-aware redemption history:**
+```sql
+alter table transactions add column reward_id uuid references rewards(id);
+```
+
+Verify after running all five:
+```sql
+select * from rewards order by merchant_id, cost;
+select column_name from information_schema.columns where table_name = 'inventory_items';
+```
+
+> Note: this round replaces `redeemReward(cardId, merchantId)` with `redeemReward(cardId, merchantId, rewardId)` — redemption now **decrements** `stamps_current` by the specific tier's cost instead of resetting to 0, since a customer's balance is shared across all of a merchant's tiers. `issueStamp` also changes shape (`issueStamp(cardId, currentStamps, merchantId, userId, options?)`) to support per-item treats awards tied to inventory instead of a flat +1 — see `TODO-inventory-deduction.md`, which this directly resolves.
 
 ---
 

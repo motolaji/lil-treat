@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import PwaInstallCapture from './components/PwaInstallCapture';
 
 export const metadata: Metadata = {
   title: 'Stackpot',
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         fontFamily: "'DM Sans', system-ui, sans-serif",
         WebkitFontSmoothing: 'antialiased',
       }}>
+        <PwaInstallCapture />
         {children}
       </body>
     </html>

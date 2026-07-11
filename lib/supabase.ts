@@ -31,6 +31,17 @@ export interface LoyaltyCard {
   merchants?: Merchant;
 }
 
+export interface Reward {
+  id: string;
+  merchant_id: string;
+  label: string;
+  description: string | null;
+  cost: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Handle generation ──────────────────────────────────────────────────────
 
 const ADJECTIVES = [
@@ -134,12 +145,38 @@ export async function getUserCards(userId: string): Promise<LoyaltyCard[]> {
   return (data ?? []) as LoyaltyCard[];
 }
 
+export interface EarnLineItem {
+  inventory_item_id: string;
+  name: string;
+  qty: number;
+  unit_price: number;
+  treats_value: number;
+}
+
+export interface IssueStampOptions {
+  lineItems?: EarnLineItem[];
+  flatAmount?: number;
+}
+
+export interface IssueStampResult {
+  newCount: number;
+  receiptId: string | null;
+}
+
 export async function issueStamp(
   cardId: string,
   currentStamps: number,
-  amount?: number,
-): Promise<number | null> {
-  const newCount = currentStamps + 1;
+  merchantId: string,
+  userId: string,
+  options: IssueStampOptions = {},
+): Promise<IssueStampResult | null> {
+  const lineItems = options.lineItems ?? [];
+  const hasItems = lineItems.length > 0;
+
+  const treatsAwarded = hasItems
+    ? lineItems.reduce((sum, li) => sum + li.qty * li.treats_value, 0)
+    : 1;
+  const newCount = currentStamps + treatsAwarded;
 
   const { error: updateError } = await supabase
     .from('loyalty_cards')
@@ -148,12 +185,45 @@ export async function issueStamp(
 
   if (updateError) return null;
 
+  const totalAmount = hasItems
+    ? lineItems.reduce((sum, li) => sum + li.qty * li.unit_price, 0)
+    : (options.flatAmount ?? null);
+
   const { error: txError } = await supabase
     .from('transactions')
-    .insert({ loyalty_card_id: cardId, type: 'earn', amount: amount ?? null });
+    .insert({ loyalty_card_id: cardId, type: 'earn', amount: totalAmount });
 
   if (txError) return null;
-  return newCount;
+
+  let receiptId: string | null = null;
+
+  if (hasItems) {
+    const receiptLineItems = lineItems.map((li) => ({
+      inventory_item_id: li.inventory_item_id,
+      name: li.name,
+      qty: li.qty,
+      unit_price: li.unit_price,
+      treats_value: li.treats_value,
+      line_treats: li.qty * li.treats_value,
+    }));
+
+    const { data: receipt, error: receiptError } = await supabase
+      .from('receipts')
+      .insert({
+        user_id: userId,
+        merchant_id: merchantId,
+        loyalty_card_id: cardId,
+        line_items: receiptLineItems,
+        total_amount: totalAmount ?? 0,
+        total_treats_earned: treatsAwarded,
+      })
+      .select('id')
+      .single();
+
+    if (!receiptError && receipt) receiptId = receipt.id;
+  }
+
+  return { newCount, receiptId };
 }
 
 export interface RedeemResult {
@@ -164,34 +234,44 @@ export interface RedeemResult {
 export async function redeemReward(
   cardId: string,
   merchantId: string,
+  rewardId: string,
 ): Promise<RedeemResult | null> {
+  const { data: reward, error: rewardError } = await supabase
+    .from('rewards')
+    .select('*')
+    .eq('id', rewardId)
+    .eq('merchant_id', merchantId)
+    .single();
+
+  if (rewardError || !reward || !reward.active) return null;
+
   const { data: card, error } = await supabase
     .from('loyalty_cards')
-    .select('*, merchants(*), users(handle)')
+    .select('*, users(handle)')
     .eq('id', cardId)
     .eq('merchant_id', merchantId)
     .single();
 
   if (error || !card) return null;
+  if (card.stamps_current < reward.cost) return null;
 
-  const target = card.merchants?.stamp_target ?? 9;
-  if (card.stamps_current < target) return null;
+  const newCount = card.stamps_current - reward.cost;
 
   const { error: updateError } = await supabase
     .from('loyalty_cards')
-    .update({ stamps_current: 0, updated_at: new Date().toISOString() })
+    .update({ stamps_current: newCount, updated_at: new Date().toISOString() })
     .eq('id', cardId);
 
   if (updateError) return null;
 
   const { error: txError } = await supabase
     .from('transactions')
-    .insert({ loyalty_card_id: cardId, type: 'redeem' });
+    .insert({ loyalty_card_id: cardId, type: 'redeem', reward_id: rewardId });
 
   if (txError) return null;
 
   return {
-    rewardLabel: card.merchants?.reward_label ?? 'Reward',
+    rewardLabel: reward.label,
     userHandle: card.users?.handle ?? null,
   };
 }
@@ -205,6 +285,64 @@ export async function expireCard(cardId: string): Promise<void> {
   await supabase
     .from('transactions')
     .insert({ loyalty_card_id: cardId, type: 'expire' });
+}
+
+// ── Rewards catalog ────────────────────────────────────────────────────────
+
+export async function getMerchantRewards(merchantId: string, activeOnly = false): Promise<Reward[]> {
+  let query = supabase.from('rewards').select('*').eq('merchant_id', merchantId).order('cost');
+  if (activeOnly) query = query.eq('active', true);
+
+  const { data, error } = await query;
+  if (error) return [];
+  return (data ?? []) as Reward[];
+}
+
+export async function createReward(
+  merchantId: string,
+  label: string,
+  cost: number,
+  description?: string,
+): Promise<Reward | null> {
+  const { data, error } = await supabase
+    .from('rewards')
+    .insert({ merchant_id: merchantId, label, cost, description: description ?? null })
+    .select()
+    .single();
+
+  if (error) return null;
+  return data as Reward;
+}
+
+export async function updateReward(
+  rewardId: string,
+  patch: Partial<Pick<Reward, 'label' | 'description' | 'cost' | 'active'>>,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('rewards')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', rewardId);
+
+  return !error;
+}
+
+export async function getRewardsForMerchants(merchantIds: string[]): Promise<Record<string, Reward[]>> {
+  if (merchantIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('rewards')
+    .select('*')
+    .in('merchant_id', merchantIds)
+    .eq('active', true)
+    .order('cost');
+
+  if (error) return {};
+
+  const grouped: Record<string, Reward[]> = {};
+  for (const r of (data ?? []) as Reward[]) {
+    (grouped[r.merchant_id] ??= []).push(r);
+  }
+  return grouped;
 }
 
 // ── Merchant helpers ───────────────────────────────────────────────────────
@@ -254,10 +392,12 @@ export interface CreateMerchantResult {
 export async function createMerchantAccount(
   name: string,
   userId: string,
+  stampTarget: number = 9,
+  rewardLabel: string = 'Free coffee',
 ): Promise<CreateMerchantResult> {
   const { data: merchant, error } = await supabase
     .from('merchants')
-    .insert({ name, slug: slugify(name), stamp_target: 9, reward_label: 'Free coffee' })
+    .insert({ name, slug: slugify(name), stamp_target: stampTarget, reward_label: rewardLabel })
     .select()
     .single();
 
@@ -265,7 +405,7 @@ export async function createMerchantAccount(
     // Slug collision — retry once with a new random suffix.
     const { data: retryMerchant, error: retryError } = await supabase
       .from('merchants')
-      .insert({ name, slug: slugify(name), stamp_target: 9, reward_label: 'Free coffee' })
+      .insert({ name, slug: slugify(name), stamp_target: stampTarget, reward_label: rewardLabel })
       .select()
       .single();
     if (retryError || !retryMerchant) {
@@ -286,7 +426,143 @@ async function linkMerchantUser(merchant: Merchant, userId: string): Promise<Cre
     .insert({ merchant_id: merchant.id, user_id: userId });
 
   if (linkError) return { merchant: null, error: linkError.message };
+
+  // Best-effort starter reward tier — merchant creation still succeeds if this fails.
+  await createReward(merchant.id, merchant.reward_label, Math.max(merchant.stamp_target, 1));
+
   return { merchant, error: null };
+}
+
+// ── Promo inbox ────────────────────────────────────────────────────────────
+
+export interface PromotionRow {
+  id: string;
+  merchant_id: string;
+  title: string;
+  body: string;
+  created_at: string;
+  merchants?: { name: string };
+}
+
+export async function createPromotion(
+  merchantId: string,
+  title: string,
+  body: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('promotions')
+    .insert({ merchant_id: merchantId, title, body });
+  return !error;
+}
+
+export async function getMerchantPromotions(merchantId: string): Promise<PromotionRow[]> {
+  const { data, error } = await supabase
+    .from('promotions')
+    .select('*')
+    .eq('merchant_id', merchantId)
+    .order('created_at', { ascending: false });
+  if (error) return [];
+  return (data ?? []) as PromotionRow[];
+}
+
+export async function getPromotionsForUser(userId: string): Promise<PromotionRow[]> {
+  const { data: cards } = await supabase
+    .from('loyalty_cards')
+    .select('merchant_id')
+    .eq('user_id', userId);
+
+  const merchantIds = [...new Set((cards ?? []).map((c) => c.merchant_id))];
+  if (merchantIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('promotions')
+    .select('*, merchants(name)')
+    .in('merchant_id', merchantIds)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return (data ?? []) as unknown as PromotionRow[];
+}
+
+// ── Missing-points claims ────────────────────────────────────────────────────
+
+export interface PointClaim {
+  id: string;
+  loyalty_card_id: string;
+  user_id: string;
+  merchant_id: string;
+  note: string;
+  visit_date: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  merchants?: { name: string };
+  users?: { handle: string };
+}
+
+export async function createPointClaim(
+  cardId: string,
+  userId: string,
+  merchantId: string,
+  note: string,
+  visitDate?: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('point_claims')
+    .insert({
+      loyalty_card_id: cardId,
+      user_id: userId,
+      merchant_id: merchantId,
+      note,
+      visit_date: visitDate ?? null,
+    });
+  return !error;
+}
+
+export async function getUserClaims(userId: string): Promise<PointClaim[]> {
+  const { data, error } = await supabase
+    .from('point_claims')
+    .select('*, merchants(name)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) return [];
+  return (data ?? []) as unknown as PointClaim[];
+}
+
+export async function getMerchantClaims(merchantId: string): Promise<PointClaim[]> {
+  const { data, error } = await supabase
+    .from('point_claims')
+    .select('*, users(handle)')
+    .eq('merchant_id', merchantId)
+    .order('created_at', { ascending: false });
+  if (error) return [];
+  return (data ?? []) as unknown as PointClaim[];
+}
+
+export async function resolveClaim(
+  claimId: string,
+  approve: boolean,
+  cardId?: string,
+  merchantId?: string,
+  userId?: string,
+): Promise<boolean> {
+  if (approve && cardId && merchantId && userId) {
+    const { data: card } = await supabase
+      .from('loyalty_cards')
+      .select('stamps_current')
+      .eq('id', cardId)
+      .single();
+    if (!card) return false;
+
+    const result = await issueStamp(cardId, card.stamps_current, merchantId, userId);
+    if (result === null) return false;
+  }
+
+  const { error } = await supabase
+    .from('point_claims')
+    .update({ status: approve ? 'approved' : 'rejected' })
+    .eq('id', claimId);
+
+  return !error;
 }
 
 export async function getTodayStamps(merchantId: string): Promise<number> {
@@ -381,6 +657,41 @@ export async function addItemToList(
     .from('shopping_lists')
     .update({ items: updated, updated_at: new Date().toISOString() })
     .eq('id', listId);
+}
+
+export interface ReceiptLineItem {
+  inventory_item_id: string | null;
+  name: string;
+  qty: number;
+  unit_price: number;
+  treats_value: number;
+  line_treats: number;
+}
+
+export interface Receipt {
+  id: string;
+  user_id: string;
+  merchant_id: string;
+  loyalty_card_id: string | null;
+  line_items: ReceiptLineItem[];
+  total_amount: number;
+  total_treats_earned: number;
+  created_at: string;
+  merchants?: { name: string };
+}
+
+export async function getUserReceipts(userId: string, merchantId?: string): Promise<Receipt[]> {
+  let query = supabase
+    .from('receipts')
+    .select('*, merchants(name)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (merchantId) query = query.eq('merchant_id', merchantId);
+
+  const { data, error } = await query;
+  if (error) return [];
+  return (data ?? []) as unknown as Receipt[];
 }
 
 export interface TransactionRow {
