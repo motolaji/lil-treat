@@ -1,0 +1,10 @@
+/* Inline styles can't express @keyframes, so this is one of the few
+   non-breakpoint .css files in the app — purely for the pulse animation. */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.skeleton {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}

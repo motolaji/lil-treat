@@ -1,0 +1,181 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 48px);
+  padding: 22px 26px 0;
+  background: var(--color-white);
+}
+
+.header {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.homeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.homeButton:focus-visible,
+.forgotPasswordButton:focus-visible,
+.loginButton:focus-visible,
+.googleButton:focus-visible,
+.signUpTextButton:focus-visible {
+  outline: 2px solid var(--color-green-on-black);
+  outline-offset: 2px;
+}
+
+.homeIcon {
+  width: 28px;
+  height: 28px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.brandImage {
+  width: 128px;
+  height: auto;
+}
+
+.title {
+  margin: 8px 0 0;
+  font-size: 2.1rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-black);
+}
+
+.tagline {
+  margin: 12px 0 0;
+  font-size: 0.88rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-black);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 36px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.forgotPasswordButton {
+  align-self: center;
+  margin-top: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: underline;
+  color: var(--color-black);
+}
+
+.loginButton,
+.googleButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.loginButton {
+  margin-top: 28px;
+  border: none;
+  background: var(--color-black);
+  color: var(--color-white);
+  box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.55);
+}
+
+.separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.separatorLine {
+  flex: 1;
+  height: 1px;
+  background: var(--color-black);
+}
+
+.separatorText {
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--color-black);
+}
+
+.googleButton {
+  border: 1.5px solid var(--color-black);
+  background: var(--color-white);
+  color: var(--color-black);
+  box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.55);
+}
+
+.signUpPrompt {
+  margin: 18px 0 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--color-black);
+}
+
+.signUpTextButton {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-decoration: underline;
+  color: var(--color-black);
+}
+
+.jarArtWrap {
+  margin-top: auto;
+  padding-top: 48px;
+  overflow: hidden;
+  margin-inline: -26px;
+}
+
+.jarArt {
+  width: 100%;
+  min-width: 320px;
+  max-width: none;
+}
+
+@media (max-width: 430px) {
+  .screen {
+    min-height: 100dvh;
+  }
+}

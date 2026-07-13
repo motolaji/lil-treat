@@ -1,0 +1,10 @@
+.page {
+  animation: pageEnter var(--motion-duration-modal) var(--motion-ease-decelerate);
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

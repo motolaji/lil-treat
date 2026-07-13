@@ -884,6 +884,112 @@ select column_name from information_schema.columns where table_name = 'inventory
 
 ---
 
+## Vendor app — merchants gain category/address/logo
+
+Added so a new standalone `vendor_app/` (Vite + React, sharing this same Supabase project) can capture a complete vendor profile at signup — needed for the consumer-side Treat Jar's category filter and distance/location display.
+
+```sql
+alter table merchants add column category text;
+alter table merchants add column address text;
+alter table merchants add column logo_url text;
+```
+
+- `category` is plain `text` (no DB enum), enforced only via an app-side dropdown: `drinks` / `food` / `retail` / `other`.
+- `address` is the human-readable string (vendor-typed or resolved via Google Places/Geocoding); `lat`/`lng` (already existing columns) hold the resolved coordinates.
+- `logo_url` is a plain URL text field for now — no Supabase Storage upload flow yet.
+- No RLS change needed yet — these are set once at signup via the existing insert policy. A future "edit merchant settings" screen will need a new `update` policy (`merchants` currently has none):
+```sql
+-- Only needed once an edit-after-signup screen is built:
+create policy "merchant owners update own merchants" on merchants
+for update to authenticated
+using (id in (select merchant_id from merchant_users where user_id = (select auth.uid())))
+with check (id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+```
+
+Verify: `select id, name, category, address, logo_url from merchants limit 5;`
+
+---
+
+## Vendor app — real logo upload (Supabase Storage) + reward ordering
+
+First-ever Supabase Storage usage in this project. Public bucket for merchant logos, scoped per-user by folder (the merchant row doesn't exist yet at signup time when the file is picked, so uploads are scoped to `auth.uid()`, not `merchant_id`).
+
+```sql
+insert into storage.buckets (id, name, public) values ('merchant-logos', 'merchant-logos', true);
+
+create policy "public read merchant logos" on storage.objects
+  for select using (bucket_id = 'merchant-logos');
+
+create policy "authenticated users upload own merchant logos" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'merchant-logos'
+    and (select auth.jwt() ->> 'is_anonymous')::boolean is false
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+```
+
+Also adding explicit vendor-controlled reward ordering — the consumer app has no cost-based sort and just displays rewards in array order, so sorting our rewards list by `cost` (as before) would silently reshuffle a vendor's intended order whenever a cost changes.
+
+```sql
+alter table rewards add column sort_order int not null default 0;
+
+with ranked as (
+  select id, row_number() over (partition by merchant_id order by cost) - 1 as rn
+  from rewards
+)
+update rewards set sort_order = ranked.rn
+from ranked where rewards.id = ranked.id;
+```
+
+No RLS change needed for `sort_order` — the existing `rewards` update policy already covers any column on that table.
+
+Verify:
+```sql
+select id from storage.buckets where id = 'merchant-logos';
+select id, merchant_id, sort_order from rewards order by merchant_id, sort_order;
+```
+
+---
+
+## Vendor app — settings screen (business hours, soft-remove locations, edit-after-signup RLS)
+
+Adds a Settings screen: editing an existing merchant's profile (name/category/address/logo/fallback stamp target), business hours, and removing a location from the multi-location picker without destroying its history.
+
+```sql
+-- The "edit merchant settings" screen this policy was reserved for (see the
+-- category/address/logo section above) now exists — apply it if you haven't
+-- already. Safe to skip if it errors with "already exists".
+create policy "merchant owners update own merchants" on merchants
+for update to authenticated
+using (id in (select merchant_id from merchant_users where user_id = (select auth.uid())))
+with check (id in (select merchant_id from merchant_users where user_id = (select auth.uid())));
+```
+
+```sql
+-- "Remove location" is a soft-deactivate, not a hard delete — a real DELETE would
+-- either cascade-destroy that location's loyalty cards/transactions/rewards history,
+-- or fail outright on the foreign keys, depending on how those were originally
+-- defined. Deactivated merchants are simply excluded from the picker/discovery
+-- queries; nothing about their historical data changes, and re-activating is just
+-- flipping this flag back (no UI for that yet — do it directly in the SQL editor
+-- if a vendor asks to undo a removal).
+alter table merchants add column active boolean not null default true;
+
+alter table merchants add column business_hours jsonb;
+```
+
+No new RLS policy needed for `active`/`business_hours` — both are plain columns on `merchants`, already covered by the update policy above.
+
+**Update `getMerchants()`/`getMerchantsForUser()` to filter `active = true`** once this is applied, otherwise deactivated locations stay visible.
+
+Verify:
+```sql
+select id, name, active, business_hours from merchants limit 5;
+```
+
+---
+
 ## Week 1 — real receipt API implementation
 
 When ready to replace the stubs, create an API route (not a client call — API keys must stay server-side):

@@ -1,0 +1,63 @@
+.tabBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  align-self: center;
+  padding: 7px 10px;
+  border-radius: 21px;
+  background: var(--color-black);
+}
+
+.tabButton {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--color-white);
+  font-size: 0.74rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.tabButton:focus-visible {
+  outline: 2px solid var(--color-black);
+  outline-offset: 2px;
+}
+
+.tabButton:active {
+  transform: scale(0.97);
+}
+
+.tabDivider {
+  color: var(--color-white);
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.tabButtonActive {
+  background: #1a1a1a;
+  border-color: rgba(255, 255, 255, 0.95);
+  font-weight: 700;
+}
+
+@media (max-width: 430px) {
+  .tabBar {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .tabButton {
+    padding: 0 10px;
+    font-size: 0.68rem;
+  }
+}

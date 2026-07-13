@@ -1,0 +1,23 @@
+/* Shared "create form + list" layout used by PromosScreen and RewardsScreen. */
+.split-form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .split-form-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .split-form-layout__form {
+    width: 360px;
+    flex-shrink: 0;
+  }
+
+  .split-form-layout__list {
+    flex: 1;
+    min-width: 0;
+  }
+}

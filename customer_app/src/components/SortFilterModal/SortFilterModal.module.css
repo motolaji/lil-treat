@@ -1,0 +1,278 @@
+.overlay {
+  position: fixed;
+  top: 24px;
+  bottom: 24px;
+  left: 50%;
+  z-index: 13;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(calc(100vw - 24px), var(--app-shell-max-width));
+  padding: 24px 16px;
+  border-radius: 32px;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.72);
+}
+
+@keyframes sortFilterOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sortFilterOverlayFadeOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sortFilterCardScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes sortFilterCardScaleOut {
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+.overlay.entering {
+  animation: sortFilterOverlayFadeIn var(--motion-duration-modal) var(--motion-ease-decelerate);
+}
+
+.overlay.exiting {
+  animation: sortFilterOverlayFadeOut var(--motion-duration-modal) var(--motion-ease-accelerate);
+}
+
+.overlay.entering .card {
+  animation: sortFilterCardScaleIn var(--motion-duration-modal) var(--motion-ease-decelerate);
+}
+
+.overlay.exiting .card {
+  animation: sortFilterCardScaleOut var(--motion-duration-modal) var(--motion-ease-accelerate);
+}
+
+.card {
+  display: flex;
+  width: min(100%, 350px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid var(--color-black);
+  border-radius: 30px;
+  background: var(--color-white);
+  box-shadow: 8px 9px 16px rgba(0, 0, 0, 0.34);
+}
+
+.header {
+  padding: 16px 20px 15px;
+  background: var(--color-black);
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  color: var(--color-white);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 16px 14px;
+}
+
+.clearActionRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.section {
+  min-width: 0;
+  margin: 0;
+  padding: 10px 10px 12px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 10px;
+}
+
+.legend {
+  padding: 0 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--color-black);
+}
+
+.filterStack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldLabel {
+  color: var(--color-black);
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.select {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 42px 10px 14px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 14px;
+  background-color: var(--color-white);
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px 16px;
+  box-shadow: 3px 4px 6px rgba(0, 0, 0, 0.28);
+  color: var(--color-black);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.2;
+  appearance: none;
+}
+
+.selectActive {
+  outline: 2px solid var(--color-green-on-black);
+  outline-offset: 2px;
+}
+
+.select:focus-visible,
+.clearButton:focus-visible,
+.actionButton:focus-visible {
+  outline: 2px solid var(--color-black);
+  outline-offset: 2px;
+}
+
+.clearButton:hover {
+  background: var(--color-white);
+}
+
+.clearButton {
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-black);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px 18px;
+}
+
+.actionButton {
+  display: inline-flex;
+  min-width: 120px;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 18px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition:
+    opacity 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.actionButton:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.actionButton:disabled:focus-visible {
+  outline: none;
+}
+
+.primaryButton {
+  border: 1.5px solid var(--color-black);
+  background: var(--color-black);
+  color: var(--color-white);
+}
+
+.primaryButtonDisabled {
+  border: 1.5px solid var(--color-grey-400);
+  background: var(--color-grey-400);
+  color: var(--color-grey-50);
+  -webkit-text-fill-color: var(--color-grey-50);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.secondaryButton {
+  border: 1.5px solid var(--color-black);
+  background: var(--color-white);
+  color: var(--color-black);
+}
+
+@media (max-width: 430px) {
+  .overlay {
+    top: 0;
+    bottom: 0;
+    width: 100vw;
+    padding: 18px 14px;
+    border-radius: 0;
+  }
+
+  .card {
+    width: min(100%, 332px);
+  }
+
+  .body {
+    padding: 15px 15px 12px;
+  }
+
+  .clearButton {
+    min-height: 36px;
+    padding: 7px 14px;
+  }
+
+  .section {
+    padding: 9px 9px 11px;
+  }
+
+  .fieldLabel,
+  .clearButton,
+  .select,
+  .actionButton {
+    font-size: 0.86rem;
+  }
+
+  .actions {
+    padding: 0 15px 16px;
+  }
+
+  .actionButton {
+    min-width: 110px;
+  }
+}

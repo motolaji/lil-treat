@@ -1,0 +1,41 @@
+.locationRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--card-text-secondary);
+}
+
+.locationIcon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  filter: var(--card-location-icon-filter);
+}
+
+.progressBlock {
+  gap: 4px;
+}
+
+.metrics {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.progressTrack {
+  height: 6px;
+}
+
+.expiryText {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: right;
+  color: var(--card-expiry-color);
+}

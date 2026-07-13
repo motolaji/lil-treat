@@ -1,0 +1,22 @@
+.scan {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .scan {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .scan__camera-col {
+    flex: 0 1 380px;
+    min-width: 280px;
+  }
+
+  .scan__outcome-col {
+    flex: 1;
+    min-width: 0;
+  }
+}

@@ -1,0 +1,29 @@
+/* Shared responsive treatment for Signup/AddLocation forms. */
+.auth-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 0 24px;
+}
+
+.auth-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .auth-card {
+    max-width: 480px;
+  }
+
+  .auth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 12px;
+  }
+
+  .auth-grid .field--full {
+    grid-column: 1 / -1;
+  }
+}

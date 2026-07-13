@@ -1,0 +1,49 @@
+.desktopFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 24px;
+  background: var(--color-page-background);
+}
+
+.desktopFallbackCard {
+  width: min(100%, 420px);
+  padding: 32px 24px;
+  border-radius: 28px;
+  background: var(--color-white);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+
+.desktopFallbackTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--color-black);
+}
+
+.desktopFallbackMessage {
+  margin: 12px 0 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: rgba(13, 13, 13, 0.72);
+}
+
+.shell {
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 0;
+  background: var(--color-white);
+}
+
+.viewport {
+  width: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--color-white);
+}

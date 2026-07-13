@@ -1,0 +1,15 @@
+.card {
+  --card-logo-column: clamp(112px, 36%, 134px);
+  --card-min-height: 0;
+  --card-logo-pane-padding: 18px 22px 18px 8px;
+  --card-logo-pane-clip: polygon(0 0, 100% 0, 64% 100%, 0 100%);
+  --card-logo-max-width: 82px;
+  --card-logo-max-height: 82px;
+  --card-content-padding: 18px 18px 20px 10px;
+  --card-content-gap: 10px;
+  --card-title-size: 1.03rem;
+  --card-title-line-height: 1.05;
+  --card-action-padding: 8px 20px;
+  --card-action-font-size: 0.82rem;
+  --card-action-min-width: 126px;
+}

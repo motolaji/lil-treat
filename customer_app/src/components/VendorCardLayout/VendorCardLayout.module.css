@@ -1,0 +1,161 @@
+.card {
+  --card-accent-color: var(--color-white);
+  --card-border-color: var(--card-accent-color);
+  --card-shadow-color: rgba(255, 255, 255, 0.62);
+  --card-background-color: var(--color-black);
+  --card-logo-pane-background: var(--color-white);
+  --card-text-primary: var(--color-white);
+  --card-text-secondary: var(--color-white);
+  --card-button-text-color: var(--color-black);
+  --card-expiry-color: var(--color-grey-200);
+  --card-location-icon-filter: brightness(0) invert(1);
+  --card-logo-column: clamp(112px, 40%, 132px);
+  --card-min-height: 132px;
+  --card-logo-pane-padding: 14px 24px 14px 0;
+  --card-logo-pane-clip: polygon(0 0, 100% 0, 65% 100%, 0 100%);
+  --card-logo-max-width: 58px;
+  --card-logo-max-height: 58px;
+  --card-logo-object-position: left center;
+  --card-content-padding: 12px 16px 12px 10px;
+  --card-content-gap: 8px;
+  --card-title-size: 1rem;
+  --card-title-line-height: 1.1;
+  --card-action-padding: 7px 14px;
+  --card-action-font-size: 0.8rem;
+  --card-action-min-width: auto;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--card-logo-column) minmax(0, 1fr);
+  flex-shrink: 0;
+  overflow: hidden;
+  min-height: var(--card-min-height);
+  border: 2px solid var(--card-border-color);
+  border-radius: 22px;
+  background: var(--card-background-color);
+  box-shadow: 3px 3px 2px var(--card-shadow-color);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.card:has(.cardOverlayButton:active) {
+  transform: scale(0.98);
+}
+
+.cardOverlayButton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cardOverlayButton:focus-visible {
+  outline: 2px solid var(--card-accent-color);
+  outline-offset: 2px;
+}
+
+.logoPane,
+.content {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.logoPane {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--card-logo-pane-padding);
+  background: var(--card-logo-pane-background);
+  clip-path: var(--card-logo-pane-clip);
+}
+
+.logo {
+  width: 100%;
+  max-width: var(--card-logo-max-width);
+  max-height: var(--card-logo-max-height);
+  height: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+  object-position: var(--card-logo-object-position);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-content-gap);
+  min-width: 0;
+  padding: var(--card-content-padding);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--card-title-size);
+  font-weight: 800;
+  line-height: var(--card-title-line-height);
+  color: var(--card-text-primary);
+}
+
+.headerAdornment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-width: 0;
+}
+
+.actionButton {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-end;
+  min-width: var(--card-action-min-width);
+  margin-top: auto;
+  padding: var(--card-action-padding);
+  border: none;
+  border-radius: 999px;
+  background: var(--card-accent-color);
+  color: var(--card-button-text-color);
+  font-size: var(--card-action-font-size);
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.actionButton:disabled {
+  cursor: default;
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid var(--card-accent-color);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .actionButton:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+}
+
+.actionButton:active:not(:disabled) {
+  transform: scale(0.95);
+}

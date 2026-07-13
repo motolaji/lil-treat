@@ -1,0 +1,1 @@
+export { VendorCollectTreatContent } from './VendorCollectTreatContent'

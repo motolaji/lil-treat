@@ -1,0 +1,231 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  transition: opacity var(--motion-duration-modal) var(--motion-ease-decelerate);
+}
+
+.drawer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(69%, 300px);
+  min-width: 198px;
+  min-height: 100%;
+  padding: 22px 18px 28px;
+  background: var(--color-white);
+  border-top-right-radius: 34px;
+  border-bottom-right-radius: 34px;
+  box-shadow: 22px 0 48px rgba(0, 0, 0, 0.18);
+  transform: translateX(-100%);
+  transition: transform var(--motion-duration-modal) var(--motion-ease-decelerate);
+}
+
+.overlay.entering .scrim {
+  opacity: 1;
+}
+
+.overlay.exiting .scrim {
+  opacity: 0;
+  transition-timing-function: var(--motion-ease-accelerate);
+}
+
+.overlay.entering .drawer {
+  transform: translateX(0);
+}
+
+.overlay.exiting .drawer {
+  transform: translateX(-100%);
+  transition-timing-function: var(--motion-ease-accelerate);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brandIcon {
+  width: 56px;
+  height: auto;
+  margin-left: 8px;
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.closeIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.brandBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  margin-left: 6px;
+}
+
+.brandName {
+  margin: 0;
+  font-size: 1.98rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--color-black);
+}
+
+.brandUnderline {
+  width: 152px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-black) 16%, var(--color-black) 84%, transparent 100%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.26);
+}
+
+.profileButton,
+.menuItem,
+.logoutButton {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.profileButton {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 66px;
+}
+
+.profileIcon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.profileCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileName {
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-black);
+}
+
+.profileEmail {
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--color-grey-700);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileChevron,
+.menuChevron {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+.divider {
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin: 26px 0 10px;
+  background: linear-gradient(90deg, transparent 0%, rgba(13, 13, 13, 0.9) 14%, rgba(13, 13, 13, 0.9) 86%, transparent 100%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 14px;
+}
+
+.menuItem {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.menuIcon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.menuLabel,
+.logoutLabel {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--color-black);
+}
+
+.logoutSection {
+  margin-top: auto;
+}
+
+.logoutButton {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.logoutIcon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+@media (max-width: 360px) {
+  .drawer {
+    width: min(74%, 276px);
+    padding-inline: 16px;
+  }
+
+  .brandName {
+    font-size: 1.8rem;
+  }
+
+  .profileButton {
+    margin-top: 50px;
+  }
+}

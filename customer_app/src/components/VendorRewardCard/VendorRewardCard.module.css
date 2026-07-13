@@ -1,0 +1,176 @@
+.card {
+  --reward-accent-color: var(--color-green-on-white);
+  --reward-shadow-color: rgba(18, 138, 58, 0.35);
+  --reward-icon-background-color: rgba(18, 138, 58, 0.2);
+
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  border: 2px solid var(--reward-accent-color);
+  border-radius: 22px;
+  background: var(--color-white);
+  box-shadow: 5px 6px 10px var(--reward-shadow-color);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.card:has(.cardOverlayButton:active) {
+  transform: scale(0.98);
+}
+
+.cardOverlayButton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cardOverlayButton:focus-visible {
+  outline: 2px solid var(--reward-accent-color);
+  outline-offset: 2px;
+}
+
+.cardInteractive {
+  cursor: pointer;
+}
+
+.header {
+  padding: 11px 18px 10px;
+  background: var(--color-black);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-white);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px 16px;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 98px;
+  height: 98px;
+  border-radius: 999px;
+  background: var(--reward-icon-background-color);
+}
+
+.icon {
+  width: 58px;
+  height: 58px;
+}
+
+.contentColumn {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.description {
+  margin: 0;
+  color: var(--color-black);
+  font-size: 0.83rem;
+  font-weight: 500;
+  line-height: 1.22;
+}
+
+.descriptionLabel {
+  font-weight: 800;
+}
+
+.progress {
+  gap: 6px;
+}
+
+.progressMetrics {
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.progressTrack {
+  height: 8px;
+}
+
+.actionButton {
+  display: inline-flex;
+  min-width: 148px;
+  align-self: flex-end;
+  justify-content: center;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--reward-accent-color);
+  color: var(--color-white);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid var(--reward-accent-color);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .actionButton:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+}
+
+.actionButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+@media (max-width: 430px) {
+  .body {
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 14px;
+    padding: 15px 14px 14px;
+  }
+
+  .iconBadge {
+    width: 88px;
+    height: 88px;
+  }
+
+  .icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .description {
+    font-size: 0.8rem;
+  }
+
+  .progressMetrics {
+    font-size: 0.72rem;
+  }
+
+  .actionButton {
+    min-width: 136px;
+    padding: 8px 14px;
+    font-size: 0.74rem;
+  }
+}

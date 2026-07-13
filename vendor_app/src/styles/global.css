@@ -1,0 +1,43 @@
+:root {
+  --color-bg: #F7F7F5;
+  --color-card: #FFFFFF;
+  --color-border: #EBEBE8;
+  --color-text: #1C1C1A;
+  --color-muted: #AEADA7;
+  --color-accent: #13B96D;
+  --color-accent-bg: #DCFCE7;
+  --color-accent-border: #BBF7D0;
+  --color-accent-text: #15803D;
+  --color-warning: #D97706;
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FCD34D;
+  --color-error: #DC2626;
+  --color-error-bg: #FEF2F2;
+  --color-error-border: #FECACA;
+
+  --font-heading: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Breakpoints below are documentation only — CSS custom properties can't
+     be used inside @media conditions. Keep the literals in each *.css file
+     in sync with src/styles/tokens.ts BREAKPOINTS. */
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-tap-highlight-color: transparent;
+}

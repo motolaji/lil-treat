@@ -1,0 +1,286 @@
+.description {
+  margin: 4px 0 0;
+  color: var(--color-black);
+  font-size: 0.84rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.searchRow {
+  margin-top: 2px;
+  margin-bottom: 10px;
+}
+
+.searchFieldWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.searchField {
+  height: 45px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 18px;
+  background: var(--color-white);
+  box-shadow: 4px 4px 6px rgba(0, 0, 0, 0.32);
+}
+
+.searchInput {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.filterButton {
+  width: 47px;
+  height: 43px;
+  border-radius: 10px;
+  box-shadow: 4px 4px 6px rgba(0, 0, 0, 0.32);
+}
+
+.filterIcon {
+  width: 22px;
+  height: 22px;
+}
+
+.collectSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.collectPanel {
+  padding: 18px 18px 20px;
+  border: 1px solid var(--color-black);
+  border-radius: 33px;
+  background: var(--color-white);
+  box-shadow: 7px 9px 14px rgba(0, 0, 0, 0.3);
+}
+
+.collectPanelHeader {
+  margin-bottom: 18px;
+  padding: 14px 18px 13px;
+  border-radius: 22px;
+  background: var(--color-black);
+}
+
+.collectPanelTitle {
+  margin: 0;
+  color: var(--color-white);
+  font-size: 1.04rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.collectPanelSubtitle {
+  margin: 4px 0 0;
+  color: var(--color-white);
+  font-size: 0.78rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.collectCategoryRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.collectCategoryRail {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  touch-action: pan-x;
+}
+
+.collectCategoryRail::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryChip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 31px;
+  padding: 0 17px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-black);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.categoryChip:focus-visible,
+.categoryScrollButton:focus-visible {
+  outline: 2px solid var(--color-black);
+  outline-offset: 2px;
+}
+
+.categoryChipActive {
+  background: var(--color-black);
+  color: var(--color-white);
+  font-weight: 700;
+}
+
+.categoryScrollButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 31px;
+  padding: 0;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.categoryScrollIcon {
+  width: 17px;
+  height: 17px;
+}
+
+.collectRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.collectDivider {
+  width: 100%;
+}
+
+.collectItemRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  padding: 0 2px 0 38px;
+}
+
+.collectItemName {
+  min-width: 0;
+  color: var(--color-black);
+  font-size: 0.81rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.collectItemCountBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 92px;
+  padding: 5px 11px 5px 14px;
+  border-radius: 999px;
+  background: var(--color-black);
+}
+
+.collectItemCount {
+  color: var(--color-white);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.collectTreatIcon {
+  width: 18px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.collectEmptyStateWrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.collectEmptyState {
+  display: flex;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 18px 0;
+}
+
+.emptyMessage {
+  margin: 0;
+  color: var(--color-grey-500);
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 430px) {
+  .description {
+    font-size: 0.81rem;
+  }
+
+  .collectPanel {
+    padding: 16px 15px 18px;
+    border-radius: 29px;
+  }
+
+  .collectPanelHeader {
+    padding: 13px 16px 12px;
+    border-radius: 20px;
+  }
+
+  .collectPanelTitle {
+    font-size: 0.95rem;
+  }
+
+  .collectPanelSubtitle {
+    font-size: 0.75rem;
+  }
+
+  .categoryChip {
+    padding: 0 15px;
+  }
+
+  .collectItemRow {
+    min-height: 58px;
+    padding-left: 32px;
+  }
+
+  .collectItemName {
+    font-size: 0.79rem;
+  }
+
+  .collectItemCountBadge {
+    min-width: 88px;
+    padding: 5px 10px 5px 13px;
+  }
+
+  .collectItemCount {
+    font-size: 1.12rem;
+  }
+
+  .collectTreatIcon {
+    width: 17px;
+  }
+}

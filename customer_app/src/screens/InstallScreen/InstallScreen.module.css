@@ -1,0 +1,272 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 48px);
+  background: var(--color-white);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 18px;
+  background: var(--color-black);
+}
+
+.headerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.headerButton:focus-visible,
+.actionPill:focus-visible {
+  outline-offset: 2px;
+}
+
+.headerButton:focus-visible {
+  outline: 2px solid var(--color-white);
+}
+
+.actionPill:focus-visible {
+  outline: 2px solid var(--color-black);
+}
+
+.backIcon {
+  width: 25px;
+  height: 25px;
+  filter: brightness(0) invert(1);
+}
+
+.headerTitle {
+  margin: 0;
+  color: var(--color-white);
+  font-size: 1.48rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+.homeIcon {
+  width: 34px;
+  height: auto;
+}
+
+.contentSection {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 34px 80px;
+}
+
+.contentInner {
+  width: 100%;
+}
+
+.sectionHeading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 38px;
+}
+
+.commonHeading {
+  margin: 0;
+  color: var(--color-black);
+  font-size: 1.86rem;
+  font-weight: 700;
+  line-height: 1.08;
+  text-align: center;
+}
+
+.sectionDivider,
+.topicDivider {
+  height: 2px;
+  align-self: center;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(0, 0, 0, 0.24) 12%,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(0, 0, 0, 0.24) 88%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+}
+
+.sectionDivider {
+  width: min(100%, 252px);
+}
+
+.topicDivider {
+  width: calc(100% - 28px);
+}
+
+.topicStack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.actionPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 40px;
+  min-width: 166px;
+  padding: 0 14px 0 18px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-black);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.actionIcon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.statusDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deviceBadge {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--color-black);
+  color: var(--color-white);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.noteText,
+.feedbackText,
+.stepText,
+.tipText {
+  margin: 0;
+  color: var(--color-black);
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.noteText {
+  color: var(--color-grey-500);
+}
+
+.feedbackText {
+  font-weight: 600;
+}
+
+.stepsList,
+.tipsList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepItem,
+.tipItem {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.stepNumber,
+.tipNumber {
+  color: var(--color-black);
+  font-size: 0.86rem;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.stepText strong,
+.tipText strong {
+  font-weight: 700;
+}
+
+@media (max-width: 430px) {
+  .screen {
+    height: 100dvh;
+  }
+
+  .header {
+    gap: 8px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .headerTitle {
+    font-size: 1.4rem;
+  }
+
+  .contentSection {
+    padding: 22px 28px 64px;
+  }
+
+  .sectionHeading {
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+
+  .commonHeading {
+    font-size: 1.56rem;
+  }
+
+  .sectionDivider {
+    width: min(100%, 220px);
+  }
+
+  .topicDivider {
+    width: calc(100% - 12px);
+  }
+
+  .topicStack {
+    gap: 24px;
+  }
+
+  .actionPill {
+    min-height: 34px;
+    min-width: 150px;
+    font-size: 0.72rem;
+  }
+
+  .deviceBadge {
+    min-height: 28px;
+    font-size: 0.68rem;
+  }
+
+  .stepItem,
+  .tipItem {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 14px;
+  }
+}

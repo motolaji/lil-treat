@@ -1,0 +1,1 @@
+export { ProfileDetailScreen } from './ProfileEmailLoginScreen'

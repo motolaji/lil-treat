@@ -1,0 +1,166 @@
+.screen {
+  --receipts-header-height: 60px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 48px);
+  background: var(--color-white);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--receipts-header-height);
+  padding: 10px 18px;
+  background: var(--color-black);
+}
+
+.headerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.headerButton:focus-visible,
+.filterButton:focus-visible {
+  outline: 2px solid var(--color-black);
+  outline-offset: 2px;
+}
+
+.backIcon {
+  width: 25px;
+  height: 25px;
+  filter: brightness(0) invert(1);
+}
+
+.headerTitleWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.receiptIcon {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1);
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1.38rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-white);
+}
+
+.homeIcon {
+  width: 34px;
+  height: auto;
+}
+
+.body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 40px 28px;
+  background: var(--color-white);
+}
+
+.bodyModalOpen {
+  overflow: hidden;
+}
+
+.description {
+  margin: 0 0 18px;
+  font-size: 0.96rem;
+  font-weight: 400;
+  line-height: 1.28;
+  color: var(--color-black);
+}
+
+.searchRow {
+  margin-bottom: 22px;
+}
+
+.searchFieldWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.searchField {
+  height: 45px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 14px;
+  background: var(--color-white);
+  box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.55);
+}
+
+.searchInput {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.filterButton {
+  width: 50px;
+  height: 45px;
+  border-radius: 11px;
+  box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.55);
+}
+
+.filterIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.receiptsSection {
+  padding-bottom: 20px;
+}
+
+.receiptsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.emptyMessage {
+  margin: 18px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--color-black);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 430px) {
+  .screen {
+    height: 100dvh;
+  }
+
+  .body {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}

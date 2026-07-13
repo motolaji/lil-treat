@@ -1,0 +1,65 @@
+.description {
+  margin: 4px 0 0;
+  color: var(--color-black);
+  font-size: 0.84rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.searchRow {
+  margin-top: 2px;
+  margin-bottom: 10px;
+}
+
+.searchFieldWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.searchField {
+  height: 45px;
+  border: 1.5px solid var(--color-black);
+  border-radius: 18px;
+  background: var(--color-white);
+  box-shadow: 4px 4px 6px rgba(0, 0, 0, 0.32);
+}
+
+.searchInput {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.filterButton {
+  width: 47px;
+  height: 43px;
+  border-radius: 10px;
+  box-shadow: 4px 4px 6px rgba(0, 0, 0, 0.32);
+}
+
+.filterIcon {
+  width: 22px;
+  height: 22px;
+}
+
+.rewardList {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.emptyMessage {
+  margin: 0;
+  color: var(--color-grey-500);
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+}
+
+@media (max-width: 430px) {
+  .description {
+    font-size: 0.81rem;
+  }
+}

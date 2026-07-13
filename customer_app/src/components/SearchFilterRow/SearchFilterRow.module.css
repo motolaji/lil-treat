@@ -1,0 +1,19 @@
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.textField {
+  flex: 1;
+  min-width: 0;
+}
+
+.filterButton {
+  flex-shrink: 0;
+}
+
+.filterIcon {
+  width: 24px;
+  height: 24px;
+}

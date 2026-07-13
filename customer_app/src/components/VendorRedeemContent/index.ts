@@ -1,0 +1,1 @@
+export { VendorRedeemContent } from './VendorRedeemContent'

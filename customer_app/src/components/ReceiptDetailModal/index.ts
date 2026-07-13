@@ -1,0 +1,1 @@
+export { ReceiptDetailModal } from './ReceiptDetailModal'

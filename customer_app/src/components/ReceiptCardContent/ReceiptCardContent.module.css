@@ -1,0 +1,29 @@
+.detailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.detailRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.detailLabel,
+.detailValue {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.05;
+  color: var(--card-text-primary);
+}
+
+.detailLabel {
+  font-weight: 700;
+}
+
+.detailValue {
+  font-weight: 400;
+}

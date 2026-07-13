@@ -1,0 +1,16 @@
+.onboarding-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.onboarding-progress__dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.onboarding-progress__dot--filled {
+  background: var(--color-accent);
+}

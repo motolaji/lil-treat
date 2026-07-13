@@ -1,0 +1,40 @@
+.myqr {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Fixed DOM order (qr-col then info-col); order flips the visual position
+   per breakpoint — same technique as MerchantShell/MerchantNav. */
+.myqr__qr-col {
+  order: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.myqr__info-col {
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .myqr {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .myqr__qr-col {
+    order: 0;
+    flex: 1;
+  }
+
+  .myqr__info-col {
+    order: 0;
+    flex: 1;
+    padding-top: env(safe-area-inset-top);
+  }
+}

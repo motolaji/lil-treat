@@ -1,0 +1,105 @@
+.screen {
+  display: flex;
+  min-height: calc(100dvh - 48px);
+  flex-direction: column;
+  background: var(--color-white);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 9px;
+  background: var(--color-black);
+}
+
+.headerSpacer {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.headerTitle {
+  margin: 0;
+  color: var(--color-white);
+  text-align: center;
+  font-size: 1.48rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.homeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.homeButton:focus-visible {
+  outline: 2px solid var(--color-green-on-black);
+  outline-offset: 2px;
+}
+
+.homeIcon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 34px 24px 56px;
+  text-align: center;
+}
+
+.promptCard {
+  margin-top: 44px;
+}
+
+.promptBody {
+  gap: 18px;
+}
+
+.promptText {
+  margin: 0;
+  color: var(--color-black);
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.38;
+}
+
+@media (max-width: 430px) {
+  .screen {
+    min-height: 100dvh;
+  }
+
+  .header {
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .headerTitle {
+    font-size: 1.34rem;
+  }
+
+  .content {
+    padding: 30px 18px 48px;
+  }
+
+  .promptCard {
+    margin-top: 36px;
+  }
+
+  .promptText {
+    font-size: 0.86rem;
+  }
+}

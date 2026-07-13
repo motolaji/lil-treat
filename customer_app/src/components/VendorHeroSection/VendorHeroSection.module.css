@@ -1,0 +1,168 @@
+.heroSection {
+  padding: 10px 18px 0;
+  background: var(--color-black);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.headerButton:focus-visible {
+  outline: 2px solid var(--color-white);
+  outline-offset: 2px;
+}
+
+.headerIcon {
+  width: 25px;
+  height: 25px;
+  filter: brightness(0) invert(1);
+}
+
+.headerTitleWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vendorTitleIcon {
+  width: 19px;
+  height: 19px;
+  filter: brightness(0) invert(1);
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-white);
+}
+
+.homeIcon {
+  width: 32px;
+  height: auto;
+}
+
+.heroBody {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+  align-items: start;
+}
+
+.logoWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  padding: 5px;
+  border-radius: 999px;
+}
+
+.vendorLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.detailsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-width: 0;
+  padding-top: 8px;
+  color: var(--color-white);
+}
+
+.locationRow,
+.treatsRow,
+.expiryRow {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.2;
+  color: var(--color-white);
+}
+
+.detailIcon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  filter: brightness(0) invert(1);
+}
+
+.externalIcon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  filter: brightness(0) invert(1);
+}
+
+.distanceText {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.treatsRow {
+  font-weight: 500;
+}
+
+.validityText {
+  margin: -2px 0 0 21px;
+  font-size: 0.84rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--color-white);
+}
+
+.expiryRow {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.2;
+}
+
+@media (max-width: 430px) {
+  .headerTitle {
+    font-size: 1.34rem;
+  }
+
+  .heroBody {
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .logoWrap {
+    width: 88px;
+    height: 88px;
+  }
+
+  .detailsColumn {
+    gap: 13px;
+    padding-top: 4px;
+  }
+}
