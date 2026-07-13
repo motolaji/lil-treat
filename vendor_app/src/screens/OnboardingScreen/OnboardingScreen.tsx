@@ -122,7 +122,7 @@ export default function OnboardingScreen() {
     <div style={centeredPage}>
       <div className="auth-card">
         <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: color.text, margin: '0 0 6px', fontFamily: font.heading, letterSpacing: '-0.03em' }}>Stackpot</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: color.text, margin: '0 0 6px', fontFamily: font.heading, letterSpacing: '-0.03em' }}>LilTreat</h1>
           <p style={{ color: color.muted, fontSize: 14, margin: 0 }}>{STEP_LABELS[step - 1]}</p>
         </div>
 

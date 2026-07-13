@@ -29,7 +29,7 @@ export default function LoginScreen() {
     <div style={centeredPage}>
       <div style={{ width: '100%', maxWidth: 360, padding: '0 24px' }}>
         <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: color.text, margin: '0 0 6px', fontFamily: font.heading, letterSpacing: '-0.03em' }}>Stackpot</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: color.text, margin: '0 0 6px', fontFamily: font.heading, letterSpacing: '-0.03em' }}>LilTreat</h1>
           <p style={{ color: color.muted, fontSize: 14, margin: 0 }}>Sign in to your vendor account</p>
         </div>
 

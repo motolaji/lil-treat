@@ -19,7 +19,7 @@ export default function MerchantNav() {
 
   return (
     <nav className="merchant-nav">
-      <span className="merchant-nav__wordmark">Stackpot</span>
+      <span className="merchant-nav__wordmark">LilTreat</span>
       {tabs.map(({ path, label, icon: Icon }) => {
         const active = location.pathname === path;
         return (

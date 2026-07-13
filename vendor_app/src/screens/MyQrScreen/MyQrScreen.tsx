@@ -52,7 +52,7 @@ export default function MyQrScreen() {
           )}
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: color.text, fontFamily: font.heading, letterSpacing: '-0.02em' }}>
-              {merchant?.name ?? 'Stackpot Merchant'}
+              {merchant?.name ?? 'LilTreat Merchant'}
             </h1>
             <p style={{ color: color.muted, fontSize: 12, margin: '2px 0 0' }}>Merchant portal</p>
           </div>

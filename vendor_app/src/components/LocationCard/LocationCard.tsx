@@ -163,11 +163,38 @@ export default function LocationCard({ merchant, isCurrent, canRemove, onSetCurr
             required
             style={inputStyle}
           />
-          <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle}>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>
-            ))}
-          </select>
+          <div>
+            <label style={{ display: 'block', color: color.muted, fontSize: 12, margin: '0 0 6px', fontWeight: 500 }}>
+              Type of business
+            </label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {CATEGORIES.map((c) => {
+                const isSelected = category === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    style={{
+                      minHeight: 44,
+                      padding: '0 18px',
+                      borderRadius: 999,
+                      border: `1.5px solid ${isSelected ? color.accent : color.border}`,
+                      background: isSelected ? color.accent : color.card,
+                      color: isSelected ? color.card : color.text,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                      touchAction: 'manipulation',
+                    }}
+                  >
+                    {c[0].toUpperCase() + c.slice(1)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <AddressField
             value={address}
             onChange={setAddress}
