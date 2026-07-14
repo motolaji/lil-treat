@@ -1,4 +1,4 @@
-export type SidebarIconKey = 'treatJar' | 'myQr' | 'receipts' | 'install' | 'helpSupport'
+export type SidebarIconKey = 'treatJar' | 'receipts' | 'install' | 'helpSupport'
 
 export type MockSidebarItem = {
   id: string
@@ -11,11 +11,6 @@ export const mockSidebarItems: MockSidebarItem[] = [
     id: 'treat-jar',
     label: 'Treat Jar',
     iconKey: 'treatJar',
-  },
-  {
-    id: 'my-qr',
-    label: 'My QR Code',
-    iconKey: 'myQr',
   },
   {
     id: 'receipts',

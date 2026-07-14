@@ -5,7 +5,7 @@ import { color } from '../../styles/tokens';
 
 const tabs = [
   { path: '/',           label: 'POS',       icon: PosIcon },
-  { path: '/scan',       label: 'Scan',      icon: ScanIcon },
+  { path: '/scan',       label: 'Redeem',    icon: ScanIcon },
   { path: '/my-qr',      label: 'QR Code',   icon: QRIcon },
   { path: '/activity',   label: 'Activity',  icon: ChartIcon },
   { path: '/inventory',  label: 'Inventory', icon: InventoryIcon },

@@ -30,13 +30,11 @@ import cookieJarIcon from '../../../export_for_build/icons-pack/cookie-jar-infil
 import cookieJarOutlineIcon from '../../../export_for_build/icons-pack/cookie-jar.svg'
 import logoutIcon from '../../../export_for_build/icons-pack/logout.svg'
 import userIcon from '../../../export_for_build/icons-pack/user-outline.svg'
-import myQrIcon from '../../../export_for_build/icons-pack/shopping-store.svg'
 import qrScannerFrame from '../../../export_for_build/assets/qr-code-scanner-frame.svg'
 import brandIcon from '../../../export_for_build/assets/liltreat-icon-large.png'
 import styles from './HomeScreen.module.css'
 
 const treatJarPath = '/treat-jar'
-const myQrPath = '/my-qr'
 const receiptsPath = '/receipts'
 const installPath = '/install'
 const helpSupportPath = '/help-support'
@@ -46,7 +44,6 @@ const sheetSwipeThreshold = 28
 
 const sidebarItemIcons: Record<(typeof mockSidebarItems)[number]['iconKey'], string> = {
   treatJar: cookieJarOutlineIcon,
-  myQr: myQrIcon,
   receipts: receiptIcon,
   install: downloadIcon,
   helpSupport: helpIcon,
@@ -153,11 +150,6 @@ export function HomeScreen() {
 
     if (itemId === 'treat-jar') {
       navigate(treatJarPath)
-      return
-    }
-
-    if (itemId === 'my-qr') {
-      navigate(myQrPath)
       return
     }
 

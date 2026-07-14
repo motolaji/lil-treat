@@ -263,7 +263,7 @@ export default function OnboardingScreen() {
                 A few things worth doing next
               </p>
               <ul style={{ color: color.text, fontSize: 13, margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
-                <li>Add your menu items in <strong>Inventory</strong> so Scan can award treats per item</li>
+                <li>Add your menu items in <strong>Inventory</strong> so POS can award treats per item</li>
                 <li>Send your first update to customers from <strong>Promos</strong></li>
                 <li>Fine-tune your profile any time in <strong>Settings</strong></li>
               </ul>

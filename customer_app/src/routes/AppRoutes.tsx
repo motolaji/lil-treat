@@ -17,7 +17,6 @@ import { SignUpScreen } from '../screens/SignUpScreen/SignUpScreen'
 import { TreatJarScreen } from '../screens/TreatJarScreen/TreatJarScreen'
 import { VendorScreen } from '../screens/VendorScreen/VendorScreen'
 import { VendorScanScreen } from '../screens/VendorScanScreen/VendorScanScreen'
-import { MyQrScreen } from '../screens/MyQrScreen/MyQrScreen'
 
 export function AppRoutes() {
   return (
@@ -41,7 +40,6 @@ export function AppRoutes() {
           <Route path="/receipts" element={<ReceiptsListScreen />} />
           <Route path="/treat-jar" element={<TreatJarScreen />} />
           <Route path="/scan" element={<VendorScanScreen />} />
-          <Route path="/my-qr" element={<MyQrScreen />} />
           <Route path="/vendor/:vendorId/:tab/:rewardId" element={<VendorScreen />} />
           <Route path="/vendor/:vendorId/:tab?" element={<VendorScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
