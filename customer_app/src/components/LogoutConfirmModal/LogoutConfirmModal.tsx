@@ -1,5 +1,6 @@
 import { ActionModal } from '../ActionModal'
 import { brand } from '../../config/brand'
+import { formatTreats } from '../../lib/format'
 
 import styles from './LogoutConfirmModal.module.css'
 
@@ -29,7 +30,7 @@ export function LogoutConfirmModal({
     >
       <div className={styles.content}>
         <p className={styles.summary}>
-          You currently have <strong>{collectedTreatCount}</strong>{' '}
+          You currently have <strong>{formatTreats(collectedTreatCount)}</strong>{' '}
           {brand.treatUnitPlural} collected across <strong>{visitedVendorCount}</strong>{' '}
           vendors on this account.
         </p>

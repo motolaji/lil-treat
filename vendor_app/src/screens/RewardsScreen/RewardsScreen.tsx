@@ -8,6 +8,7 @@ import Stepper from '../../components/ui/Stepper';
 import InlineEditNumber from '../../components/ui/InlineEditNumber';
 import EmptyState from '../../components/ui/EmptyState';
 import { color, font } from '../../styles/tokens';
+import { formatTreats } from '../../lib/format';
 import '../../styles/split-form-layout.css';
 
 const fieldStyle: React.CSSProperties = {
@@ -165,7 +166,7 @@ export default function RewardsScreen() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, gap: 10 }}>
                       <InlineEditNumber
                         value={reward.cost}
-                        label={(v) => `${v} small treats`}
+                        label={(v) => `${formatTreats(v)} small treats`}
                         onSave={(v) => saveCost(reward, v)}
                       />
                       <PillButton

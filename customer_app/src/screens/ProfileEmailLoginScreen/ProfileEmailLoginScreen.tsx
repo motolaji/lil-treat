@@ -7,6 +7,7 @@ import { ProfileIdentitySummary } from '../../components/ProfileIdentitySummary'
 import { brand } from '../../config/brand'
 import { useAuth } from '../../context/AuthContext'
 import { supabase, getUserCards } from '../../lib/supabase'
+import { formatTreats } from '../../lib/format'
 
 import backIcon from '../../../export_for_build/icons-pack/back.svg'
 import logoutIcon from '../../../export_for_build/icons-pack/logout.svg'
@@ -161,7 +162,7 @@ export function ProfileDetailScreen() {
           <section className={styles.metricsCard} aria-label="Profile activity overview">
             <div className={styles.metricBlock}>
               <img className={styles.metricIcon} src={cookieJarIcon} alt="" aria-hidden="true" />
-              <strong className={styles.metricValue}>{collectedTreatCount}</strong>
+              <strong className={styles.metricValue}>{formatTreats(collectedTreatCount)}</strong>
               <span className={styles.metricLabel}>{brand.treatUnitPlural} Collected</span>
             </div>
 

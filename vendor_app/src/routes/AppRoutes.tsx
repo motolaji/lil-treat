@@ -7,9 +7,10 @@ import OnboardingScreen from '../screens/OnboardingScreen/OnboardingScreen'
 import AddLocationScreen from '../screens/AddLocationScreen/AddLocationScreen'
 import MyQrScreen from '../screens/MyQrScreen/MyQrScreen'
 import ScanScreen from '../screens/ScanScreen/ScanScreen'
+import PosScreen from '../screens/PosScreen/PosScreen'
 import RewardsScreen from '../screens/RewardsScreen/RewardsScreen'
 import InventoryScreen from '../screens/InventoryScreen/InventoryScreen'
-import TodayScreen from '../screens/TodayScreen/TodayScreen'
+import ActivityScreen from '../screens/ActivityScreen/ActivityScreen'
 import PromosScreen from '../screens/PromosScreen/PromosScreen'
 import SettingsScreen from '../screens/SettingsScreen/SettingsScreen'
 
@@ -21,9 +22,10 @@ export function AppRoutes() {
 
       <Route element={<AuthGate />}>
         <Route element={<MerchantShell />}>
-          <Route path="/" element={<MyQrScreen />} />
+          <Route path="/" element={<PosScreen />} />
           <Route path="/scan" element={<ScanScreen />} />
-          <Route path="/today" element={<TodayScreen />} />
+          <Route path="/my-qr" element={<MyQrScreen />} />
+          <Route path="/activity" element={<ActivityScreen />} />
           <Route path="/inventory" element={<InventoryScreen />} />
           <Route path="/promos" element={<PromosScreen />} />
           <Route path="/rewards" element={<RewardsScreen />} />

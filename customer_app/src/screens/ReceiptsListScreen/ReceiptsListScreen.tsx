@@ -92,6 +92,7 @@ export function ReceiptsListScreen() {
           items: receipt.line_items.map((item, index) => ({
             id: `${receipt.id}-${index}`,
             name: item.name,
+            qty: item.qty,
             cost: `£${(item.qty * item.unit_price).toFixed(2)}`,
             treatCount: item.line_treats,
           })),

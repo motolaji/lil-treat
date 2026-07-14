@@ -693,18 +693,30 @@ export async function resolveClaim(
   return !error;
 }
 
-export async function getTodayStamps(merchantId: string): Promise<number> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+export interface ActivityTransaction {
+  id: string;
+  type: 'earn' | 'redeem' | 'expire';
+  created_at: string;
+  reward_id: string | null;
+  rewards?: { label: string };
+  loyalty_cards?: { users?: { handle: string } };
+}
 
-  const { count, error } = await supabase
+export async function getMerchantActivity(merchantId: string, days = 30): Promise<ActivityTransaction[]> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  since.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
     .from('transactions')
-    .select('id, loyalty_cards!inner(merchant_id)', { count: 'exact', head: true })
+    .select('id, type, created_at, reward_id, rewards(label), loyalty_cards!inner(merchant_id, users(handle))')
     .eq('loyalty_cards.merchant_id', merchantId)
-    .gte('created_at', today.toISOString());
+    .gte('created_at', since.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(300);
 
-  if (error) return 0;
-  return count ?? 0;
+  if (error) return [];
+  return (data ?? []) as unknown as ActivityTransaction[];
 }
 
 // ── Shopping list helpers ──────────────────────────────────────────────────
@@ -851,18 +863,3 @@ export async function getUserTransactions(
   return (data ?? []) as unknown as TransactionRow[];
 }
 
-export async function getTodayTransactions(merchantId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('id, created_at, loyalty_cards!inner(merchant_id, users(handle))')
-    .eq('loyalty_cards.merchant_id', merchantId)
-    .gte('created_at', today.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  if (error) return [];
-  return data ?? [];
-}

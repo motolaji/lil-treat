@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 
 import { getCardProgressPercent, getCardTheme, type CardBackground } from '../VendorCardLayout'
+import { formatTreats } from '../../lib/format'
 import styles from './TreatProgress.module.css'
 
 type TreatProgressProps = {
@@ -47,7 +48,7 @@ export function TreatProgress({
     <div className={joinClasses(styles.root, className)} style={style}>
       <p className={joinClasses(styles.metrics, metricsClassName)}>
         <span className={styles.count}>
-          {currentCount}/{requiredCount}
+          {formatTreats(currentCount)}/{formatTreats(requiredCount)}
         </span>{' '}
         <span className={styles.label}>{label}</span>
       </p>

@@ -10,6 +10,7 @@ import Button from '../../components/ui/Button';
 import StatusCard from '../../components/ui/StatusCard';
 import Stepper from '../../components/ui/Stepper';
 import { color, font, statusTextColor } from '../../styles/tokens';
+import { formatTreats } from '../../lib/format';
 import './ScanScreen.css';
 
 interface ConsumerPayload {
@@ -176,7 +177,7 @@ export default function ScanScreen() {
     setProcessing(false);
 
     const target = cheapestActiveCost(rewards, merchant.stamp_target);
-    setScanConfirm(`Treat issued to ${pendingEarn.userHandle} — now ${result.newCount} of ${target}`);
+    setScanConfirm(`Treat issued to ${pendingEarn.userHandle} — now ${formatTreats(result.newCount)} of ${formatTreats(target)}`);
     setPendingEarn(null);
     setAmountInput('');
   }
@@ -238,7 +239,7 @@ export default function ScanScreen() {
                           <div style={{ minWidth: 0 }}>
                             <p style={{ color: color.text, fontSize: 14, fontWeight: 600, margin: 0 }}>{item.name}</p>
                             <p style={{ color: color.muted, fontSize: 12, margin: '2px 0 0' }}>
-                              £{item.price.toFixed(2)} · {item.treats_value} treats each
+                              £{item.price.toFixed(2)} · {formatTreats(item.treats_value)} treats each
                             </p>
                           </div>
                           <Stepper
@@ -253,7 +254,7 @@ export default function ScanScreen() {
                     })}
                   </div>
                   <p style={{ color: color.accent, fontSize: 13, fontWeight: 600, margin: '12px 0 0' }}>
-                    Treats to award: {treatsFromItems}
+                    Treats to award: {formatTreats(treatsFromItems)}
                   </p>
                 </div>
               )}

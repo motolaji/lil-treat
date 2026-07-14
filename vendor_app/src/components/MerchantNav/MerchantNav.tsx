@@ -4,9 +4,10 @@ import { supabase } from '../../lib/supabase';
 import { color } from '../../styles/tokens';
 
 const tabs = [
-  { path: '/',           label: 'QR Code',   icon: QRIcon },
+  { path: '/',           label: 'POS',       icon: PosIcon },
   { path: '/scan',       label: 'Scan',      icon: ScanIcon },
-  { path: '/today',      label: 'Today',     icon: ChartIcon },
+  { path: '/my-qr',      label: 'QR Code',   icon: QRIcon },
+  { path: '/activity',   label: 'Activity',  icon: ChartIcon },
   { path: '/inventory',  label: 'Inventory', icon: InventoryIcon },
   { path: '/rewards',    label: 'Rewards',   icon: RewardIcon },
   { path: '/promos',     label: 'Promos',    icon: PromosIcon },
@@ -79,6 +80,18 @@ function ScanIcon({ active }: { active: boolean }) {
       <path d="M20 14v3.5A2.5 2.5 0 0117.5 20H14" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
       <path d="M8 20H4.5A2.5 2.5 0 012 17.5V14" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
       <path d="M6 11h10" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PosIcon({ active }: { active: boolean }) {
+  const w = active ? 2 : 1.5;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <path d="M3 4h16l-1.5 9.5a2 2 0 01-2 1.7H6.5a2 2 0 01-2-1.7L3 4z" stroke="currentColor" strokeWidth={w} strokeLinejoin="round" fill={active ? 'currentColor' : 'none'} fillOpacity={0.1} />
+      <path d="M2 4h2M7 8h8M7 11.5h5" stroke="currentColor" strokeWidth={w} strokeLinecap="round" />
+      <circle cx="8.5" cy="18.5" r="1.4" fill="currentColor" />
+      <circle cx="14.5" cy="18.5" r="1.4" fill="currentColor" />
     </svg>
   );
 }

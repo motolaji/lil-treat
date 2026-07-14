@@ -1,6 +1,7 @@
 import { type ReceiptView } from '../../types/receipt'
 
 import { ActionModal } from '../ActionModal'
+import { formatTreats } from '../../lib/format'
 import styles from './ReceiptDetailModal.module.css'
 
 type ReceiptDetailModalProps = {
@@ -54,11 +55,11 @@ export function ReceiptDetailModal({ receipt, treatUnitColumnLabel, onClose }: R
                 <td className={styles.itemCell}>
                   <span className={styles.itemNameWrap}>
                     <span className={styles.itemBullet} aria-hidden="true" />
-                    <span className={styles.itemName}>{item.name}</span>
+                    <span className={styles.itemName}>{item.qty > 1 ? `${item.qty} × ${item.name}` : item.name}</span>
                   </span>
                 </td>
                 <td className={styles.valueCell}>{item.cost}</td>
-                <td className={styles.valueCell}>{item.treatCount}</td>
+                <td className={styles.valueCell}>{formatTreats(item.treatCount)}</td>
               </tr>
             ))}
           </tbody>

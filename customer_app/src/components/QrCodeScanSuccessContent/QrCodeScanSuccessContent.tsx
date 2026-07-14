@@ -1,4 +1,5 @@
 import { brand } from '../../config/brand'
+import { formatTreats } from '../../lib/format'
 
 import brandIcon from '../../../export_for_build/assets/liltreat-icon-large.png'
 import styles from './QrCodeScanSuccessContent.module.css'
@@ -34,7 +35,7 @@ export function QrCodeScanSuccessContent({
       />
 
       <p className={classNames(styles.count, countClassName)} id={countId}>
-        +{collectedCount}
+        +{formatTreats(collectedCount)}
       </p>
 
       <p className={classNames(styles.summary, summaryClassName)}>

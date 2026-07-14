@@ -5,6 +5,7 @@
 export type ReceiptItemView = {
   id: string
   name: string
+  qty: number
   cost: string
   treatCount: number
 }

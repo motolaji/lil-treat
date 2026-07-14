@@ -13,6 +13,7 @@ export type VendorCollectItemView = {
   id: string
   name: string
   treatCount: number
+  imageUrl: string | null
   categoryIds: string[]
   showInAll?: boolean
 }

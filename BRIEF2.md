@@ -990,6 +990,62 @@ select id, name, active, business_hours from merchants limit 5;
 
 ---
 
+## Vendor app — POS page (vendor builds a cart, customer scans to earn) + fractional points
+
+Adds a second itemized-earn path alongside the existing "vendor scans customer" flow in `ScanScreen`: a vendor now builds a cart on a new POS page, generates a QR encoding that cart, and the *customer* scans it (via the existing `/scan` screen in `customer_app`) to earn itemized points and a receipt. The QR payload is self-contained (same pattern as the redeem QR) — nothing is written to the database until the customer actually scans it.
+
+Also switches every points-like column from whole numbers to decimals, since per-item point values are now expected to be fractional (e.g. a £2.00 item worth 0.5 points):
+
+```sql
+alter table inventory_items alter column treats_value type numeric(8,2);
+alter table loyalty_cards alter column stamps_current type numeric(8,2);
+alter table rewards alter column cost type numeric(8,2);
+alter table receipts alter column total_treats_earned type numeric(8,2);
+alter table merchants alter column stamp_target type numeric(8,2);
+```
+
+Plain `int`→`numeric` widening — no `USING` clause needed, no data loss, no RLS change (these are existing columns on already-covered tables). TypeScript already types all of these as plain `number`, so no interface changes are needed on the app side — only the column types above and display-formatting call sites (see `formatTreats` in `lib/supabase.ts` in both `vendor_app` and `customer_app`, wraps a number as `"9"` when whole or `"3.5"` when fractional).
+
+Verify:
+```sql
+select column_name, data_type, numeric_precision, numeric_scale
+from information_schema.columns
+where table_name in ('inventory_items', 'loyalty_cards', 'rewards', 'receipts', 'merchants')
+  and column_name in ('treats_value', 'stamps_current', 'cost', 'total_treats_earned', 'stamp_target');
+```
+
+---
+
+## Vendor app — POS item photos
+
+Lets the POS "+ New item" quick-create attach a photo, shown in POS's product-tile grid. Same pattern as the merchant-logo upload (see "real logo upload" section above), but scoped by `merchant_id` folder instead of `auth.uid()` — the merchant already exists whenever POS is in use (unlike at signup, when the merchant row doesn't exist yet), so ownership can be checked directly via `merchant_users` rather than the folder-per-user workaround.
+
+```sql
+alter table inventory_items add column image_url text;
+
+insert into storage.buckets (id, name, public) values ('inventory-item-images', 'inventory-item-images', true);
+
+create policy "public read inventory item images" on storage.objects
+  for select using (bucket_id = 'inventory-item-images');
+
+create policy "merchant owners upload own inventory item images" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'inventory-item-images'
+    and (storage.foldername(name))[1] in (select merchant_id::text from merchant_users where user_id = (select auth.uid()))
+  );
+```
+
+CSV-uploaded items have no way to carry a photo (CSV can't attach binary files) — they simply show a placeholder until recreated through POS's quick-create, or a future "edit item" screen adds one after the fact. Not building item-photo editing beyond creation-time in this pass.
+
+Verify:
+```sql
+select id from storage.buckets where id = 'inventory-item-images';
+select id, name, image_url from inventory_items limit 5;
+```
+
+---
+
 ## Week 1 — real receipt API implementation
 
 When ready to replace the stubs, create an API route (not a client call — API keys must stay server-side):

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { type VendorCollectItemView } from '../../types/vendor'
+import { formatTreats } from '../../lib/format'
 import { GreyDivider } from '../GreyDivider'
 import { SearchFilterRow } from '../SearchFilterRow'
 import {
@@ -223,9 +224,16 @@ export function VendorCollectTreatContent({
               {visibleCollectItems.map((item, index) => (
                 <Fragment key={item.id}>
                   <div className={styles.collectItemRow}>
+                    <span className={styles.collectItemThumb} aria-hidden="true">
+                      {item.imageUrl ? (
+                        <img className={styles.collectItemThumbImg} src={item.imageUrl} alt="" />
+                      ) : (
+                        item.name.charAt(0).toUpperCase()
+                      )}
+                    </span>
                     <span className={styles.collectItemName}>{formatCollectItemName(item.name)}</span>
                     <span className={styles.collectItemCountBadge}>
-                      <span className={styles.collectItemCount}>{item.treatCount}</span>
+                      <span className={styles.collectItemCount}>{formatTreats(item.treatCount)}</span>
                       <img className={styles.collectTreatIcon} src={treatTokenIcon} alt="" aria-hidden="true" />
                     </span>
                   </div>

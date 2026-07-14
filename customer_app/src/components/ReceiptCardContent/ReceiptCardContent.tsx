@@ -1,3 +1,4 @@
+import { formatTreats } from '../../lib/format'
 import styles from './ReceiptCardContent.module.css'
 
 type ReceiptCardContentProps = {
@@ -22,7 +23,7 @@ export function ReceiptCardContent({
 
       <div className={styles.detailRow}>
         <dt className={styles.detailLabel}>{treatUnitLabel}:</dt>
-        <dd className={styles.detailValue}>{collectedCount}</dd>
+        <dd className={styles.detailValue}>{formatTreats(collectedCount)}</dd>
       </div>
 
       <div className={styles.detailRow}>

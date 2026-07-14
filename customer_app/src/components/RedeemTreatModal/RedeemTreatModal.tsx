@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { ActionModal } from '../ActionModal'
 import QRDisplay from '../QRDisplay/QRDisplay'
 import { withExpiry } from '../../lib/qrExpiry'
+import { formatTreats } from '../../lib/format'
 
 import styles from './RedeemTreatModal.module.css'
 
@@ -72,11 +73,11 @@ export function RedeemTreatModal({
     >
       <p className={styles.message}>
         Show the below QR code to the <strong>{vendorName}</strong> vendor to redeem your{' '}
-        <strong>{rewardName}</strong>. This will cost {treatCost} {treatUnitPlural}
+        <strong>{rewardName}</strong>. This will cost {formatTreats(treatCost)} {treatUnitPlural}
       </p>
 
       <div className={styles.qrWrap}>
-        {payload ? <QRDisplay value={payload} size={200} /> : null}
+        {payload ? <QRDisplay value={payload} size={220} /> : null}
       </div>
     </ActionModal>
   )

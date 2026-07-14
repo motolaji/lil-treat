@@ -11,6 +11,7 @@ import SectionLabel from '../../components/ui/SectionLabel';
 import InlineEditNumber from '../../components/ui/InlineEditNumber';
 import EmptyState from '../../components/ui/EmptyState';
 import { color, font } from '../../styles/tokens';
+import { formatTreats } from '../../lib/format';
 import './InventoryScreen.css';
 
 export default function InventoryScreen() {
@@ -148,7 +149,7 @@ export default function InventoryScreen() {
                   <div style={{ marginTop: 4 }}>
                     <InlineEditNumber
                       value={item.treats_value}
-                      label={(v) => `${v} treats each`}
+                      label={(v) => `${formatTreats(v)} treats each`}
                       onSave={(v) => saveTreatsValue(item, v)}
                     />
                   </div>

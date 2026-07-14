@@ -9,6 +9,7 @@ export interface InventoryItem {
   stock_qty: number;
   price: number;
   treats_value: number;
+  image_url: string | null;
   updated_at: string;
 }
 
@@ -61,6 +62,34 @@ export async function upsertInventoryItems(
 
   if (error) return [];
   return (data ?? []) as InventoryItem[];
+}
+
+export async function createInventoryItem(
+  merchantId: string,
+  item: { name: string; price: number; treatsValue: number; imageUrl?: string | null },
+): Promise<InventoryItem | null> {
+  // Ad-hoc items created from the POS quick-add (e.g. "Americano") don't come
+  // with a vendor-chosen SKU the way CSV rows do — generate one that's always
+  // unique so it never collides with an existing row on (merchant_id, sku).
+  const sku = `ITEM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .insert({
+      merchant_id: merchantId,
+      sku,
+      name: item.name,
+      stock_qty: 0,
+      price: item.price,
+      treats_value: item.treatsValue,
+      image_url: item.imageUrl ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .select('*')
+    .single();
+
+  if (error) return null;
+  return data as InventoryItem;
 }
 
 export async function sellOne(

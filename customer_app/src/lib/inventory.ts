@@ -9,6 +9,7 @@ export interface InventoryItem {
   stock_qty: number;
   price: number;
   treats_value: number;
+  image_url: string | null;
   updated_at: string;
 }
 

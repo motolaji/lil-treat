@@ -106,6 +106,7 @@ export function VendorScreen() {
     id: item.id,
     name: item.name,
     treatCount: item.treats_value,
+    imageUrl: item.image_url,
     categoryIds: ['all'],
     showInAll: true,
   }))

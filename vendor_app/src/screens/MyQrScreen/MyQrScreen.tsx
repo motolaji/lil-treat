@@ -7,6 +7,7 @@ import { useElementSize } from '../../hooks/useElementSize';
 import Card from '../../components/ui/Card';
 import SectionLabel from '../../components/ui/SectionLabel';
 import { color, font } from '../../styles/tokens';
+import { formatTreats } from '../../lib/format';
 import './MyQrScreen.css';
 
 export default function MyQrScreen() {
@@ -64,7 +65,7 @@ export default function MyQrScreen() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {rewards.map((r) => (
                 <p key={r.id} style={{ color: color.text, fontSize: 15, fontWeight: 600, margin: 0 }}>
-                  {r.cost} treats → {r.label}
+                  {formatTreats(r.cost)} treats → {r.label}
                 </p>
               ))}
             </div>

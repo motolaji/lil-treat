@@ -5,6 +5,7 @@ import externalLinkIcon from '../../../export_for_build/icons-pack/external_link
 import locationIcon from '../../../export_for_build/icons-pack/location.svg'
 import shoppingStoreIcon from '../../../export_for_build/icons-pack/shopping-store.svg'
 import candyIcon from '../../../export_for_build/assets/liltreat-icon-large.png'
+import { formatTreats } from '../../lib/format'
 import styles from './VendorHeroSection.module.css'
 
 type VendorHeroSectionVendor = {
@@ -72,7 +73,7 @@ export function VendorHeroSection({
             <p className={styles.treatsRow}>
               <img className={styles.detailIcon} src={cookieJarIcon} alt="" aria-hidden="true" />
               <span>
-                {vendor.collectedCount} {treatUnitPlural} collected
+                {formatTreats(vendor.collectedCount)} {treatUnitPlural} collected
               </span>
             </p>
 
