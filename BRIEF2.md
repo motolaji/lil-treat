@@ -1046,6 +1046,23 @@ select id, name, image_url from inventory_items limit 5;
 
 ---
 
+## Root app — landing page at the main URL
+
+The repo root's Next.js app (`app/`) predates vendor_app/customer_app and was the original full prototype (wallet + merchant dashboard in one app). It's superseded by those two, but the root Vercel project is still what serves the bare domain, so its homepage (`app/page.tsx`) is now a static marketing/chooser landing page instead of the old wallet UI — mascot, headline, and two CTAs ("I'm a customer" / "I'm a merchant") linking out to the deployed apps. The rest of `app/`'s old routes (`/cards`, `/history`, `/merchant`, etc.) are untouched and still there, just no longer linked from the homepage.
+
+The two CTA links read from env vars, since the actual production URLs for vendor_app/customer_app depend on how you set up their Vercel projects/domains:
+
+```
+NEXT_PUBLIC_CUSTOMER_APP_URL=https://<your-customer-app-domain>
+NEXT_PUBLIC_VENDOR_APP_URL=https://<your-vendor-app-domain>
+```
+
+Add both in the root Vercel project's Environment Variables settings once the other two projects have URLs — until then the buttons link to `#`.
+
+Also fixed while touching this: root `tsconfig.json` had `"include": ["**/*.ts", "**/*.tsx", ...]` with only `node_modules` excluded, so `next build`'s typecheck was scanning `vendor_app/`/`customer_app/` too — separate Vite projects whose image-import types collide with Next's `StaticImageData` augmentation. Now excludes both directories.
+
+---
+
 ## Week 1 — real receipt API implementation
 
 When ready to replace the stubs, create an API route (not a client call — API keys must stay server-side):

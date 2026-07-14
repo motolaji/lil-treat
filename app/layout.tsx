@@ -3,7 +3,7 @@ import './globals.css';
 import PwaInstallCapture from './components/PwaInstallCapture';
 
 export const metadata: Metadata = {
-  title: 'Stackpot',
+  title: 'LilTreat',
   description: 'Loyalty treats for local shops',
 };
 
@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" style={{ height: '100%' }}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#6ee7b7" />
+        <meta name="theme-color" content="#13B96D" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

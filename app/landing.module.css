@@ -1,0 +1,37 @@
+.ctaPrimary,
+.ctaSecondary {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.ctaPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(19, 185, 109, 0.28);
+}
+
+.ctaSecondary:hover {
+  transform: translateY(-1px);
+  opacity: 0.85;
+}
+
+.ctaRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .ctaRow {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .stepsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
