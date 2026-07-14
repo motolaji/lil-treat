@@ -11,6 +11,7 @@ import styles from './VendorHeroSection.module.css'
 type VendorHeroSectionVendor = {
   displayName: string
   distanceText: string
+  mapsUrl?: string
   collectedCount: number
   validityDays?: number
   expiryDays: number
@@ -63,11 +64,24 @@ export function VendorHeroSection({
         </div>
 
         <div className={styles.detailsColumn}>
-          <p className={styles.locationRow}>
-            <img className={styles.detailIcon} src={locationIcon} alt="" aria-hidden="true" />
-            <span className={styles.distanceText}>{vendor.distanceText}</span>
-            <img className={styles.externalIcon} src={externalLinkIcon} alt="" aria-hidden="true" />
-          </p>
+          {vendor.mapsUrl ? (
+            <a
+              className={styles.locationRow}
+              href={vendor.mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open ${vendor.displayName}'s location in Maps`}
+            >
+              <img className={styles.detailIcon} src={locationIcon} alt="" aria-hidden="true" />
+              <span className={styles.distanceText}>{vendor.distanceText}</span>
+              <img className={styles.externalIcon} src={externalLinkIcon} alt="" aria-hidden="true" />
+            </a>
+          ) : (
+            <p className={styles.locationRow}>
+              <img className={styles.detailIcon} src={locationIcon} alt="" aria-hidden="true" />
+              <span className={styles.distanceText}>{vendor.distanceText}</span>
+            </p>
+          )}
 
           <div>
             <p className={styles.treatsRow}>

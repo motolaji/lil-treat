@@ -108,12 +108,21 @@ export function VendorScreen() {
     return <Navigate to={`/vendor/${vendorId}/redeem`} replace state={location.state} />
   }
 
-  const hasVendorLocation = card.merchants?.lat != null && card.merchants?.lng != null
+  const merchantLat = card.merchants?.lat
+  const merchantLng = card.merchants?.lng
+  const merchantAddress = card.merchants?.address
+  const hasVendorLocation = merchantLat != null && merchantLng != null
   const distanceFallback = !hasVendorLocation
     ? "Vendor hasn't shared a location"
     : locationDenied
       ? 'Enable location to see distance'
       : 'Distance unavailable'
+
+  const mapsUrl = merchantLat != null && merchantLng != null
+    ? `https://www.google.com/maps/search/?api=1&query=${merchantLat},${merchantLng}`
+    : merchantAddress
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(merchantAddress)}`
+      : undefined
 
   const vendorName = card.merchants?.name ?? 'Vendor'
   const collectItems: VendorCollectItemView[] = items.map((item) => ({
@@ -172,6 +181,7 @@ export function VendorScreen() {
         vendor={{
           displayName: vendorName.toUpperCase(),
           distanceText: distanceText ?? distanceFallback,
+          mapsUrl,
           collectedCount: card.stamps_current,
           expiryDays: EXPIRY_DAYS,
         }}
