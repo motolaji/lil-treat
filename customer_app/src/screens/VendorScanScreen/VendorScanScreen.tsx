@@ -11,11 +11,6 @@ import type { ScanResultLocationState } from '../../types/scanResult'
 import homeIcon from '../../../export_for_build/icons-pack/home.svg'
 import styles from './VendorScanScreen.module.css'
 
-interface MerchantQrPayload {
-  type: 'merchant'
-  merchant_id?: string
-}
-
 interface SalePayload {
   type: 'sale'
   merchant_id?: string
@@ -23,7 +18,17 @@ interface SalePayload {
   exp?: number
 }
 
-type ScanPayload = MerchantQrPayload | SalePayload
+// The vendor's static counter QR is a plain URL (so a phone's native camera
+// can open it directly), not an app-internal JSON payload — extract the
+// /vendor/:id path out of it so the in-app scanner can just navigate there.
+function extractVendorPath(text: string): string | null {
+  try {
+    const url = new URL(text)
+    return /^\/vendor\/[^/]+/.test(url.pathname) ? `${url.pathname}${url.search}` : null
+  } catch {
+    return null
+  }
+}
 
 export function VendorScanScreen() {
   const navigate = useNavigate()
@@ -42,7 +47,13 @@ export function VendorScanScreen() {
     setScanError(null)
     setScanActive(false)
 
-    let payload: ScanPayload
+    const vendorPath = extractVendorPath(text)
+    if (vendorPath) {
+      navigate(vendorPath)
+      return
+    }
+
+    let payload: SalePayload
     try {
       payload = JSON.parse(text)
     } catch {
@@ -106,38 +117,8 @@ export function VendorScanScreen() {
       return
     }
 
-    if (payload.type !== 'merchant' || !payload.merchant_id) {
-      setScanError("Not a vendor QR. Point at the QR on the vendor's screen.")
-      setScanActive(true)
-      return
-    }
-
-    setProcessing(true)
-    const card = await getOrCreateCard(user.id, payload.merchant_id)
-    if (!card) {
-      setProcessing(false)
-      setScanError('Could not connect to server. Check your connection.')
-      setScanActive(true)
-      return
-    }
-
-    const startingCount = card.stamps_current
-    const result = await issueStamp(card.id, startingCount, payload.merchant_id, user.id)
-    setProcessing(false)
-
-    if (result === null) {
-      setScanError('Failed to record treat. Try again.')
-      setScanActive(true)
-      return
-    }
-
-    const scanResult: ScanResultLocationState = {
-      merchantId: payload.merchant_id,
-      vendorName: card.merchants?.name ?? 'Vendor',
-      collectedCount: result.newCount - startingCount,
-    }
-
-    navigate('/qr-code-scan-prompt-login', { state: scanResult, replace: true })
+    setScanError("Not a vendor QR. Point at the QR on the vendor's screen.")
+    setScanActive(true)
   }
 
   function startCamera() {

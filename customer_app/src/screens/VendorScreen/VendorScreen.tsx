@@ -67,7 +67,13 @@ export function VendorScreen() {
       .catch(() => undefined)
   }, [card?.merchants?.lat, card?.merchants?.lng])
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <main className={styles.loadingScreen}>
+        <p className={styles.loadingText}>Loading…</p>
+      </main>
+    )
+  }
 
   if (!vendorId || !card) {
     return <Navigate to="/" replace />

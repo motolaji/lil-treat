@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getMerchantRewards, Reward } from '../../lib/supabase';
+import { vendorLandingUrl } from '../../lib/customerAppUrl';
 import QRDisplay from '../../components/QRDisplay/QRDisplay';
 import { useMerchant } from '../../context/MerchantContext';
 import { useElementSize } from '../../hooks/useElementSize';
@@ -21,9 +22,7 @@ export default function MyQrScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [merchant?.id]);
 
-  const merchantQR = merchant
-    ? JSON.stringify({ type: 'merchant', merchant_id: merchant.id })
-    : '';
+  const merchantQR = merchant ? vendorLandingUrl(merchant.id) : '';
 
   const qrSize = qrColWidth > 0 ? Math.min(qrColWidth - 40, 480) : 260;
 

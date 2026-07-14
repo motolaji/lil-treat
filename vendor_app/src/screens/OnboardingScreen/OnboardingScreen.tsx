@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase, createMerchantAccount, createReward, type Merchant } from '../../lib/supabase';
 import { uploadMerchantLogo } from '../../lib/storage';
+import { vendorLandingUrl } from '../../lib/customerAppUrl';
 import AddressField from '../../components/AddressField/AddressField';
 import LogoUpload from '../../components/LogoUpload/LogoUpload';
 import QRDisplay from '../../components/QRDisplay/QRDisplay';
@@ -116,7 +117,7 @@ export default function OnboardingScreen() {
     setStep(4);
   }
 
-  const merchantQR = merchant ? JSON.stringify({ type: 'merchant', merchant_id: merchant.id }) : '';
+  const merchantQR = merchant ? vendorLandingUrl(merchant.id) : '';
 
   return (
     <div style={centeredPage}>

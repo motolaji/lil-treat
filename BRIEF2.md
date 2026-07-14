@@ -1063,6 +1063,27 @@ Also fixed while touching this: root `tsconfig.json` had `"include": ["**/*.ts",
 
 ---
 
+## Vendor app — counter QR is now a real URL, not an app-internal payload
+
+The vendor's static counter QR (`OnboardingScreen.tsx` step 4, and `MyQrScreen.tsx` at `/my-qr`) used to encode `{"type":"merchant","merchant_id":"<uuid>"}` as a raw JSON string — meaningless to a phone's native camera app, since it isn't a URL. A customer without the app installed had no way to do anything with it. It now encodes a real link:
+
+```
+${VITE_CUSTOMER_APP_URL}/vendor/{merchant.id}
+```
+
+so any camera app opens it straight into customer_app's vendor landing page (`/vendor/:vendorId`, which already auto-bootstraps an anonymous Supabase session and loyalty card for a brand-new visitor — see `AuthContext.tsx`/`getOrCreateUser`).
+
+Add to `vendor_app`'s env (local `.env.local` and the Vercel project):
+```
+VITE_CUSTOMER_APP_URL=https://<your-customer-app-domain>
+```
+
+**Behavior change:** the in-app scanner (`customer_app`'s `VendorScanScreen.tsx`, reached via "SCAN VENDOR QR CODE") used to treat scanning this counter QR as an instant free stamp (`issueStamp` with no purchase/line-items, and no expiry on the QR — meaning it could be scanned repeatedly for unlimited free stamps, an existing loophole). Now that URL/JSON can't coexist in one QR payload, the scanner detects a `/vendor/:id` URL and just navigates there (browse the vendor's rewards/items) instead of auto-issuing a stamp. Earning is now exclusively via POS's itemized `'sale'` QR — this closes the old ambiguity rather than adding a new one.
+
+Also gave `VendorScreen.tsx`'s loading state a visible "Loading…" message instead of rendering nothing — it's now a real first-touch landing page for scanned-in visitors (anon auth bootstrap + card creation takes a moment), so a blank screen reads as broken.
+
+---
+
 ## Week 1 — real receipt API implementation
 
 When ready to replace the stubs, create an API route (not a client call — API keys must stay server-side):
