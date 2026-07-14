@@ -4,6 +4,7 @@ import {
   type BusinessHours, type DayOfWeek, type Merchant,
 } from '../../lib/supabase';
 import { uploadMerchantLogo } from '../../lib/storage';
+import { geocodeAddress } from '../../lib/places';
 import AddressField from '../AddressField/AddressField';
 import LogoUpload from '../LogoUpload/LogoUpload';
 import Card from '../ui/Card';
@@ -82,12 +83,23 @@ export default function LocationCard({ merchant, isCurrent, canRemove, onSetCurr
 
     const parsedStampTarget = parseInt(stampTarget, 10);
 
+    // If a suggestion was clicked, use that. Otherwise, if the address text
+    // was actually edited, geocode it rather than saving stale coordinates
+    // for a now-inaccurate address. If the address wasn't touched, keep
+    // whatever coordinates the merchant already had.
+    const trimmedAddress = address.trim();
+    const addressChanged = trimmedAddress !== (merchant.address ?? '');
+    const latLng = resolvedLatLng
+      ?? (addressChanged
+        ? (trimmedAddress ? await geocodeAddress(trimmedAddress) : null)
+        : (merchant.lat != null && merchant.lng != null ? { lat: merchant.lat, lng: merchant.lng } : null));
+
     const { merchant: updated, error: updateError } = await updateMerchant(merchant.id, {
       name: name.trim(),
       category,
-      address: address.trim() || null,
-      lat: resolvedLatLng?.lat ?? merchant.lat,
-      lng: resolvedLatLng?.lng ?? merchant.lng,
+      address: trimmedAddress || null,
+      lat: latLng?.lat ?? null,
+      lng: latLng?.lng ?? null,
       logo_url: logoUrl,
       stamp_target: parsedStampTarget > 0 ? parsedStampTarget : merchant.stamp_target,
       business_hours: businessHours,

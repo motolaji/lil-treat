@@ -1084,6 +1084,75 @@ Also gave `VendorScreen.tsx`'s loading state a visible "Loading…" message inst
 
 ---
 
+## Database — fix "Database error deleting user" from the Supabase dashboard
+
+None of the original schema's foreign keys had `ON DELETE CASCADE`. `public.users.id` and `merchant_users.user_id` both reference `auth.users(id)` with the default `NO ACTION`, so deleting a user from the Supabase Auth dashboard always fails outright — and even after fixing those two, `loyalty_cards`/`receipts`/`point_claims` all reference `public.users(id)` the same way, plus `transactions`/`receipts`/`point_claims` reference `loyalty_cards(id)`.
+
+(`shopping_lists` was part of the originally documented schema but was never actually created in the live database, and turned out to be dead code — `lib/supabase.ts` has the functions in both apps but nothing in either UI calls them, a leftover from the old `app/` prototype's shopping-list feature. Skip it; don't try to alter a table that doesn't exist.)
+
+Verify constraint names first (should match the Postgres defaults used below, since nothing here was ever manually renamed):
+```sql
+select conname, conrelid::regclass as table_name, pg_get_constraintdef(oid) as definition
+from pg_constraint
+where contype = 'f'
+  and (confrelid = 'auth.users'::regclass or confrelid = 'public.users'::regclass or confrelid = 'public.loyalty_cards'::regclass);
+```
+
+Then re-add each as `on delete cascade`:
+```sql
+alter table users drop constraint users_id_fkey;
+alter table users add constraint users_id_fkey
+  foreign key (id) references auth.users(id) on delete cascade;
+
+alter table merchant_users drop constraint merchant_users_user_id_fkey;
+alter table merchant_users add constraint merchant_users_user_id_fkey
+  foreign key (user_id) references auth.users(id) on delete cascade;
+
+alter table loyalty_cards drop constraint loyalty_cards_user_id_fkey;
+alter table loyalty_cards add constraint loyalty_cards_user_id_fkey
+  foreign key (user_id) references users(id) on delete cascade;
+
+alter table point_claims drop constraint point_claims_user_id_fkey;
+alter table point_claims add constraint point_claims_user_id_fkey
+  foreign key (user_id) references users(id) on delete cascade;
+
+alter table receipts drop constraint receipts_user_id_fkey;
+alter table receipts add constraint receipts_user_id_fkey
+  foreign key (user_id) references users(id) on delete cascade;
+
+alter table transactions drop constraint transactions_loyalty_card_id_fkey;
+alter table transactions add constraint transactions_loyalty_card_id_fkey
+  foreign key (loyalty_card_id) references loyalty_cards(id) on delete cascade;
+
+alter table point_claims drop constraint point_claims_loyalty_card_id_fkey;
+alter table point_claims add constraint point_claims_loyalty_card_id_fkey
+  foreign key (loyalty_card_id) references loyalty_cards(id) on delete cascade;
+
+alter table receipts drop constraint receipts_loyalty_card_id_fkey;
+alter table receipts add constraint receipts_loyalty_card_id_fkey
+  foreign key (loyalty_card_id) references loyalty_cards(id) on delete cascade;
+```
+
+**Consequence:** deleting a user from `auth.users` now permanently cascades away their loyalty cards, transactions, receipts, and point claims, and unlinks them from any merchant via `merchant_users` (the merchant row itself is untouched — `merchants` has no FK to `auth.users`). Irreversible, so double-check before deleting a real account.
+
+---
+
+## Consumer app — "Distance unavailable" fix (merchant lat/lng capture + clearer messaging)
+
+The Google Places geocoding pipeline (`vendor_app/src/lib/places.ts`, `AddressField.tsx`) already existed, but only resolved `lat`/`lng` when a merchant clicked an autocomplete suggestion — typing an address and moving on (or never touching it, since it's optional) saved a null-coordinate merchant, which is why the customer app kept showing "Distance unavailable" regardless of the visitor's own location.
+
+Added `geocodeAddress(input)` to `places.ts` — reuses the existing `autocompleteAddress`/`resolvePlace` pipeline (top suggestion → resolve) as a fallback. Wired into all three places a merchant's address gets saved:
+- `OnboardingScreen.tsx` (signup) and `AddLocationScreen.tsx` (add location): if no suggestion was clicked but an address was typed, geocode it before `createMerchantAccount`.
+- `LocationCard.tsx` (Settings → Locations, editing an existing merchant): if the address text was actually changed and no suggestion was clicked, geocode the new text; if the address wasn't touched, keep the existing `lat`/`lng` as-is rather than wiping them.
+
+This only fixes it going forward — merchants created before this existed (or before the AddressField/Places UI landed at all, back when `lat`/`lng` were manually set via SQL per an earlier BRIEF2.md note) still have null coordinates until they re-save their address in Settings → Locations. No automated backfill is possible without knowing each merchant's real address.
+
+Also, `VendorScreen.tsx`/`TreatJarScreen.tsx` used to silently swallow *why* distance was unavailable (`.catch(() => undefined)`) — same generic message whether the merchant had no location or the visitor denied geolocation permission. Now distinguishes:
+- `VendorScreen.tsx`: "Vendor hasn't shared a location" (merchant has no lat/lng) vs. "Enable location to see distance" (geolocation denied/unsupported) vs. the original generic fallback (edge case: coords still loading).
+- `TreatJarScreen.tsx`: shows a small note under the search row — but only when the visitor has an active distance sort/filter (`closestVendor` or the distance filter) *and* geolocation failed — explaining that distance sort/filter won't be accurate without location access. Doesn't nag people who aren't using that feature.
+
+---
+
 ## Week 1 — real receipt API implementation
 
 When ready to replace the stubs, create an API route (not a client call — API keys must stay server-side):

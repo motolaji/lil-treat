@@ -90,6 +90,7 @@ export function TreatJarScreen() {
   const [userCards, setUserCards] = useState<LoyaltyCard[]>([])
   const [rewardsByMerchant, setRewardsByMerchant] = useState<Record<string, Reward[]>>({})
   const [coords, setCoords] = useState<Coordinates | null>(null)
+  const [geoDenied, setGeoDenied] = useState(false)
 
   const treatUnitCollectedLabel = `${brand.treatUnitPlural} Collected`
 
@@ -100,7 +101,10 @@ export function TreatJarScreen() {
       setRewardsByMerchant(rewardsMap)
     })
 
-    getCurrentPosition().then(setCoords).catch(() => setCoords(null))
+    getCurrentPosition().then(setCoords).catch(() => {
+      setCoords(null)
+      setGeoDenied(true)
+    })
   }, [])
 
   useEffect(() => {
@@ -212,6 +216,12 @@ export function TreatJarScreen() {
         <p className={styles.description}>
           Explore your treat jar to discover vendors you may want to shop with
         </p>
+
+        {geoDenied && (filterSelection.sortOption === 'closestVendor' || filterSelection.filterOptions.vendorDistance) ? (
+          <p className={styles.locationNote}>
+            We don&apos;t have your location, so distance sorting/filtering won&apos;t be accurate — enable location access and reload.
+          </p>
+        ) : null}
 
         <SearchFilterRow
           inputId="treat-jar-search"

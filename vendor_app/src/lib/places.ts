@@ -43,6 +43,16 @@ export async function autocompleteAddress(input: string): Promise<PlaceSuggestio
     }));
 }
 
+// Fallback for when the merchant types an address but never clicks an
+// autocomplete suggestion (so onResolved never fires) — resolve the typed
+// text's top match on blur/submit instead of leaving lat/lng null.
+export async function geocodeAddress(input: string): Promise<ResolvedPlace | null> {
+  const suggestions = await autocompleteAddress(input);
+  const top = suggestions[0];
+  if (!top) return null;
+  return resolvePlace(top.placeId);
+}
+
 export async function resolvePlace(placeId: string): Promise<ResolvedPlace | null> {
   if (!placeId || !KEY) return null;
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase, createMerchantAccount } from '../../lib/supabase';
 import { uploadMerchantLogo } from '../../lib/storage';
+import { geocodeAddress } from '../../lib/places';
 import AddressField from '../../components/AddressField/AddressField';
 import LogoUpload from '../../components/LogoUpload/LogoUpload';
 import { inputStyle } from '../../styles/authStyles';
@@ -34,6 +35,11 @@ export default function AddLocationScreen() {
 
     const logoUrl = logoFile ? await uploadMerchantLogo(session.user.id, logoFile) : null;
 
+    // Merchant may have typed an address without clicking an autocomplete
+    // suggestion — resolve it now rather than saving with lat/lng left null.
+    const trimmedAddress = address.trim();
+    const latLng = resolvedLatLng ?? (trimmedAddress ? await geocodeAddress(trimmedAddress) : null);
+
     const { merchant, error: createError } = await createMerchantAccount(
       businessName.trim(),
       session.user.id,
@@ -41,9 +47,9 @@ export default function AddLocationScreen() {
       undefined,
       {
         category,
-        address: address.trim() || undefined,
-        lat: resolvedLatLng?.lat,
-        lng: resolvedLatLng?.lng,
+        address: trimmedAddress || undefined,
+        lat: latLng?.lat,
+        lng: latLng?.lng,
         logo_url: logoUrl ?? undefined,
       },
     );

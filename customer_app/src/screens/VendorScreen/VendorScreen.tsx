@@ -35,6 +35,7 @@ export function VendorScreen() {
   const [rewards, setRewards] = useState<Reward[]>([])
   const [items, setItems] = useState<InventoryItem[]>([])
   const [distanceText, setDistanceText] = useState<string | undefined>(undefined)
+  const [locationDenied, setLocationDenied] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -64,7 +65,7 @@ export function VendorScreen() {
         const distanceKm = haversineDistanceKm(coords, { lat: merchantLat, lng: merchantLng })
         setDistanceText(distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m away` : `${distanceKm.toFixed(1)}km away`)
       })
-      .catch(() => undefined)
+      .catch(() => setLocationDenied(true))
   }, [card?.merchants?.lat, card?.merchants?.lng])
 
   if (loading) {
@@ -106,6 +107,13 @@ export function VendorScreen() {
   if (rewardId && !activeReward) {
     return <Navigate to={`/vendor/${vendorId}/redeem`} replace state={location.state} />
   }
+
+  const hasVendorLocation = card.merchants?.lat != null && card.merchants?.lng != null
+  const distanceFallback = !hasVendorLocation
+    ? "Vendor hasn't shared a location"
+    : locationDenied
+      ? 'Enable location to see distance'
+      : 'Distance unavailable'
 
   const vendorName = card.merchants?.name ?? 'Vendor'
   const collectItems: VendorCollectItemView[] = items.map((item) => ({
@@ -163,7 +171,7 @@ export function VendorScreen() {
       <VendorHeroSection
         vendor={{
           displayName: vendorName.toUpperCase(),
-          distanceText: distanceText ?? 'Distance unavailable',
+          distanceText: distanceText ?? distanceFallback,
           collectedCount: card.stamps_current,
           expiryDays: EXPIRY_DAYS,
         }}

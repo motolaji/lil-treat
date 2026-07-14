@@ -58,6 +58,14 @@
   color: var(--color-black);
 }
 
+.locationNote {
+  margin: -8px 0 14px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-grey-500);
+}
+
 .searchRow {
   margin-bottom: 15px;
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase, createMerchantAccount, createReward, type Merchant } from '../../lib/supabase';
 import { uploadMerchantLogo } from '../../lib/storage';
 import { vendorLandingUrl } from '../../lib/customerAppUrl';
+import { geocodeAddress } from '../../lib/places';
 import AddressField from '../../components/AddressField/AddressField';
 import LogoUpload from '../../components/LogoUpload/LogoUpload';
 import QRDisplay from '../../components/QRDisplay/QRDisplay';
@@ -71,6 +72,11 @@ export default function OnboardingScreen() {
 
     const logoUrl = logoFile ? await uploadMerchantLogo(data.user.id, logoFile) : null;
 
+    // Merchant may have typed an address without clicking an autocomplete
+    // suggestion — resolve it now rather than saving with lat/lng left null.
+    const trimmedAddress = address.trim();
+    const latLng = resolvedLatLng ?? (trimmedAddress ? await geocodeAddress(trimmedAddress) : null);
+
     const { merchant: created, error: merchantError } = await createMerchantAccount(
       businessName.trim(),
       data.user.id,
@@ -78,9 +84,9 @@ export default function OnboardingScreen() {
       undefined,
       {
         category,
-        address: address.trim() || undefined,
-        lat: resolvedLatLng?.lat,
-        lng: resolvedLatLng?.lng,
+        address: trimmedAddress || undefined,
+        lat: latLng?.lat,
+        lng: latLng?.lng,
         logo_url: logoUrl ?? undefined,
       },
     );
