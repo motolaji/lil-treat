@@ -1137,6 +1137,61 @@ alter table receipts add constraint receipts_loyalty_card_id_fkey
 
 ---
 
+## Database — same fix, for deleting a `merchants` row
+
+Same root cause as the user-delete fix above, for the 8 tables with a direct `merchant_id references merchants(id)` FK, plus `transactions.reward_id references rewards(id)` (needs `set null`, not `cascade` — a reward going away shouldn't delete transaction history).
+
+Verify first:
+```sql
+select conname, conrelid::regclass as table_name, pg_get_constraintdef(oid) as definition
+from pg_constraint
+where contype = 'f'
+  and (confrelid = 'public.merchants'::regclass or confrelid = 'public.rewards'::regclass);
+```
+
+Then:
+```sql
+alter table loyalty_cards drop constraint loyalty_cards_merchant_id_fkey;
+alter table loyalty_cards add constraint loyalty_cards_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table inventory_items drop constraint inventory_items_merchant_id_fkey;
+alter table inventory_items add constraint inventory_items_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table inventory_transactions drop constraint inventory_transactions_merchant_id_fkey;
+alter table inventory_transactions add constraint inventory_transactions_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table merchant_users drop constraint merchant_users_merchant_id_fkey;
+alter table merchant_users add constraint merchant_users_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table promotions drop constraint promotions_merchant_id_fkey;
+alter table promotions add constraint promotions_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table point_claims drop constraint point_claims_merchant_id_fkey;
+alter table point_claims add constraint point_claims_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table rewards drop constraint rewards_merchant_id_fkey;
+alter table rewards add constraint rewards_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table receipts drop constraint receipts_merchant_id_fkey;
+alter table receipts add constraint receipts_merchant_id_fkey
+  foreign key (merchant_id) references merchants(id) on delete cascade;
+
+alter table transactions drop constraint transactions_reward_id_fkey;
+alter table transactions add constraint transactions_reward_id_fkey
+  foreign key (reward_id) references rewards(id) on delete set null;
+```
+
+**Consequence — much more destructive than the user-delete fix:** deleting a merchant now wipes its entire inventory, rewards, and promotions, plus every one of its customers' loyalty cards, receipts, transactions, and point claims at that business (via the cascades already set up above). For removing a business a vendor no longer operates, prefer the existing soft-delete instead — `merchants.active = false`, done via the "Remove" button in vendor_app's Settings → Locations (`LocationCard.tsx`) — which keeps all the data intact. Only hard-delete via the SQL/table editor for cleaning up test data.
+
+---
+
 ## Consumer app — "Distance unavailable" fix (merchant lat/lng capture + clearer messaging)
 
 The Google Places geocoding pipeline (`vendor_app/src/lib/places.ts`, `AddressField.tsx`) already existed, but only resolved `lat`/`lng` when a merchant clicked an autocomplete suggestion — typing an address and moving on (or never touching it, since it's optional) saved a null-coordinate merchant, which is why the customer app kept showing "Distance unavailable" regardless of the visitor's own location.
